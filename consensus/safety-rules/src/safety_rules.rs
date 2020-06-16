@@ -4,6 +4,7 @@
 use crate::{
     consensus_state::ConsensusState, error::Error,
     persistent_safety_storage::PersistentSafetyStorage, t_safety_rules::TSafetyRules, COUNTERS,
+    safety_rules_sgx_runner,
 };
 use consensus_types::{
     block::Block,
