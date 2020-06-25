@@ -3,15 +3,18 @@
 
 //! Usage: ./safety-rules node.config
 
-#![forbid(unsafe_code)]
+// #![forbid(unsafe_code)]
 
 use libra_config::config::NodeConfig;
 use libra_secure_push_metrics::MetricsPusher;
 use safety_rules::{Process, COUNTERS};
 use std::{env, process};
+mod safety_rules_sgx;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+
+    safety_rules_sgx::sgx_main();
 
     if args.len() != 2 {
         eprintln!("Incorrect number of parameters, expected a path to a config file");
