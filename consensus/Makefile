@@ -64,6 +64,7 @@ CUSTOM_EDL_PATH := ../sgx/edl
 CUSTOM_COMMON_PATH := ../sgx/common
 
 APP=safety-rules
+LIBRA_PATH=~/libra
 
 ######## EDL Settings ########
 
@@ -80,7 +81,7 @@ App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
 
 #App_Rust_Path := ./$(APP)/target/debug
 # lwg: due to libra workplace hack, build targets are in here
-App_Rust_Path := ~/libra-sgx/target/debug
+App_Rust_Path := $(LIBRA_PATH)/target/debug
 App_Enclave_u_Object :=$(APP)/libEnclave_u.a
 App_Name := bin/app
 
