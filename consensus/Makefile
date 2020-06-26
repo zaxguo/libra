@@ -21,7 +21,7 @@ SGX_SDK ?= /opt/intel/sgxsdk
 SGX_MODE ?= SW
 SGX_ARCH ?= x64
 
-TOP_DIR := .
+TOP_DIR := ../sgx
 include $(TOP_DIR)/buildenv.mk
 
 ifeq ($(shell getconf LONG_BIT), 32)
@@ -60,13 +60,14 @@ SGX_COMMON_CFLAGS += -fstack-protector
 
 CUSTOM_LIBRARY_PATH := ./lib
 CUSTOM_BIN_PATH := ./bin
-CUSTOM_EDL_PATH := ./edl
-CUSTOM_COMMON_PATH := ./common
+CUSTOM_EDL_PATH := ../sgx/edl
+CUSTOM_COMMON_PATH := ../sgx/common
 
 APP=safety-rules
 
 ######## EDL Settings ########
 
+ENCLAVE=lsr-sgx
 Enclave_EDL_Files := enclave/Enclave_t.c enclave/Enclave_t.h app/Enclave_u.c app/Enclave_u.h
 
 ######## APP Settings ########
@@ -78,7 +79,8 @@ App_Include_Paths := -I ./$(APP) -I./include -I$(SGX_SDK)/include -I$(CUSTOM_EDL
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
 
 #App_Rust_Path := ./$(APP)/target/debug
-App_Rust_Path := ~/libra/target/debug
+# lwg: due to libra workplace hack, build targets are in here
+App_Rust_Path := ~/libra-sgx/target/debug
 App_Enclave_u_Object :=$(APP)/libEnclave_u.a
 App_Name := bin/app
 
@@ -115,9 +117,9 @@ all: $(App_Name) $(Signed_RustEnclave_Name)
 
 ######## EDL Objects ########
 
-$(Enclave_EDL_Files): $(SGX_EDGER8R) enclave/Enclave.edl
-	$(SGX_EDGER8R) --trusted enclave/Enclave.edl --search-path $(SGX_SDK)/include --search-path ./edl --trusted-dir enclave
-	$(SGX_EDGER8R) --untrusted enclave/Enclave.edl --search-path $(SGX_SDK)/include --search-path ./edl --untrusted-dir $(APP)
+$(Enclave_EDL_Files): $(SGX_EDGER8R) $(ENCLAVE)/Enclave.edl
+	$(SGX_EDGER8R) --trusted $(ENCLAVE)/Enclave.edl --search-path $(SGX_SDK)/include --search-path ../sgx/edl --trusted-dir enclave
+	$(SGX_EDGER8R) --untrusted $(ENCLAVE)/Enclave.edl --search-path $(SGX_SDK)/include --search-path ../sgx/edl --untrusted-dir $(APP)
 	@echo "GEN  =>  $(Enclave_EDL_Files)"
 
 ######## App Objects ########
@@ -139,25 +141,25 @@ $(App_Name): $(App_Enclave_u_Object) $(App_SRC_Files)
 ######## Enclave Objects ########
 
 enclave/Enclave_t.o: $(Enclave_EDL_Files)
-	@$(CC) $(RustEnclave_Compile_Flags) -c enclave/Enclave_t.c -o $@
+	@$(CC) $(RustEnclave_Compile_Flags) -c $(ENCLAVE)/Enclave_t.c -o $@
 	@echo "CC   <=  $<"
 
 $(RustEnclave_Name): enclave enclave/Enclave_t.o
-	@$(CXX) enclave/Enclave_t.o -o $@ $(RustEnclave_Link_Flags)
+	@$(CXX) $(ENCLAVE)/Enclave_t.o -o $@ $(RustEnclave_Link_Flags)
 	@echo "LINK =>  $@"
 
 $(Signed_RustEnclave_Name): $(RustEnclave_Name)
 	mkdir -p bin
-	@$(SGX_ENCLAVE_SIGNER) sign -key enclave/Enclave_private.pem -enclave $(RustEnclave_Name) -out $@ -config enclave/Enclave.config.xml
+	@$(SGX_ENCLAVE_SIGNER) sign -key $(ENCLAVE)/Enclave_private.pem -enclave $(RustEnclave_Name) -out $@ -config $(ENCLAVE)/Enclave.config.xml
 	@echo "SIGN =>  $@"
 
 .PHONY: enclave
 enclave:
-	$(MAKE) -C ./enclave/
+	$(MAKE) -C ./$(ENCLAVE)/
 
 
 .PHONY: clean
 clean:
-	@rm -f $(App_Name) $(RustEnclave_Name) $(Signed_RustEnclave_Name) enclave/*_t.* app/*_u.* lib/*.a
+	@rm -f $(App_Name) $(RustEnclave_Name) $(Signed_RustEnclave_Name) $(ENCLAVE)/*_t.* $(APP)/*_u.* lib/*.a
 	@cd enclave && cargo clean && rm -f Cargo.lock
 	@cd $(APP) && cargo clean && rm -f Cargo.lock

@@ -5,6 +5,7 @@ authors = ["Libra Association <opensource@libra.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
+build = "build.rs"
 
 [dependencies]
 anyhow = "1.0.31"
@@ -26,6 +27,14 @@ libra-workspace-hack = { path = "../../common/workspace-hack", version = "0.1.0"
 serde = { version = "1.0.114", default-features = false }
 thiserror = "1.0.20"
 
+sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_urts = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+
+[patch.'https://github.com/apache/teaclave-sgx-sdk.git']
+sgx_types = { path = "./sgx_types" }
+sgx_urts = { path = "./sgx_urts" }
+
+
 [dev-dependencies]
 criterion = "0.3.2"
 tempfile = "3.1.0"
@@ -39,3 +48,4 @@ harness = false
 default = []
 fuzzing = ["consensus-types/fuzzing", "libra-config/fuzzing"]
 testing = ["libra-secure-storage/testing"]
+
