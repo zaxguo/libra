@@ -43,3 +43,8 @@ language/tools/vm-genesis/genesis/vm_config.toml
 
 # Move Build Output
 move_build_output/
+
+# Enclave object file
+.a
+.o
+consensus/bin/

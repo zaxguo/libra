@@ -67,8 +67,8 @@ APP=safety-rules
 
 ######## EDL Settings ########
 
-ENCLAVE=lsr-sgx
-Enclave_EDL_Files := enclave/Enclave_t.c enclave/Enclave_t.h app/Enclave_u.c app/Enclave_u.h
+ENCLAVE=enclave
+Enclave_EDL_Files := $(ENCLVAE)/Enclave_t.c $(ENCLAVE)/Enclave_t.h $(APP)/Enclave_u.c $(APP)/Enclave_u.h
 
 ######## APP Settings ########
 
