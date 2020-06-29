@@ -1,0 +1,26 @@
+[package]
+name = "libra-crypto-derive-sgx"
+version = "0.1.0"
+authors = ["Libra Association <opensource@libra.org>"]
+description = "Libra custom derives for `libra-crypto`"
+repository = "https://github.com/libra/libra"
+homepage = "https://libra.org"
+license = "Apache-2.0"
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+#libra-workspace-hack = { path = "../../common/workspace-hack", version = "0.1.0" }
+sgx_tstd = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_trts = { git = "https://github.com/apache/teaclave-sgx-sdk.git"}
+syn = { version = "1.0.31", features = ["derive"] }
+quote = "1.0"
+#proc-macro = { path = "../../third-party/libproc_macro", package = "proc_macro"}
+proc-macro2 = "1.0"
+#proc-macro2 = { path = "../../third-party/proc-macro2" }
+
+[dev-dependencies]
+anyhow = "1.0.31"
