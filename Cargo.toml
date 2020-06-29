@@ -11,7 +11,6 @@ members = [
     "common/debug-interface",
     "common/futures-semaphore",
     "common/lcs",
-    "common/lcs-sgx", # sgx port
     "common/logger",
     "common/metrics",
     "common/nibble",
@@ -129,6 +128,7 @@ members = [
     "testsuite/libra-swarm",
     "types",
     "vm-validator",
+
 ]
 
 # NOTE: default-members is the complete list of binaries that form the "production Libra codebase". These members should
@@ -159,6 +159,9 @@ default-members = [
     "secure/key-manager",
     "storage/backup/backup-cli",
     "storage/inspector",
+    "sgx-libs",
+    "sgx-libs/lcs-sgx",
+    "sgx-libs/types",
 ]
 
 [profile.release]

@@ -3,6 +3,7 @@ name = "lsr_enclave"
 version = "1.0.0"
 #authors = ["The Teaclave Authors"]
 authors = ["Liwei Guo"]
+edition = "2018"
 
 [lib]
 name = "lsr_enclave"
@@ -15,9 +16,11 @@ default = []
 sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 sgx_tstd = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git", features = ["backtrace"] }
 sgx_trts = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_unwind = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git"}
 
 [dependencies]
-lcs = { path = "../../common/lcs-sgx", version = "0.1.0", package = "libra-canonical-serialization-sgx" }
+lcs = { path = "../../sgx-libs/lcs-sgx", version = "0.1.0", package = "libra-canonical-serialization-sgx" }
+libra-types = { path = "../../sgx-libs/types", version = "0.1.0", package = "libra-types-sgx"}
 
 [patch.'https://github.com/apache/teaclave-sgx-sdk.git']
 sgx_alloc = { path = "../../sgx/sgx_alloc" }
