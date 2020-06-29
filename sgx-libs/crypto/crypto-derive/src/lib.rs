@@ -94,12 +94,12 @@
 //! }
 //! ```
 
-#![no_std]
+//#![no_std]
 #![forbid(unsafe_code)]
-#[macro_use]
-extern crate sgx_tstd as std;
-extern crate sgx_trts;
-use std::prelude::v1::*;
+//#[macro_use]
+//extern crate sgx_tstd as std;
+//extern crate sgx_trts;
+//use std::prelude::v1::*;
 
 extern crate proc_macro;
 extern crate proc_macro2;

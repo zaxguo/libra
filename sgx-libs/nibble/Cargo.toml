@@ -1,0 +1,19 @@
+[package]
+name = "libra-nibble-sgx"
+version = "0.1.0"
+authors = ["Libra Association <opensource@libra.org>"]
+description = "Libra libra-nibble"
+repository = "https://github.com/libra/libra"
+homepage = "https://libra.org"
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+#libra-workspace-hack = { path = "../workspace-hack", version = "0.1.0" }
+serde = {git = "https://github.com/mesalock-linux/serde-sgx.git", tag = "sgx_1.1.2" }
+sgx_tstd = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+
+[features]
+default = []
+#fuzzing = ["proptest"]
