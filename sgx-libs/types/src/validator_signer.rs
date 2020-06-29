@@ -1,13 +1,13 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
+use std::prelude::v1::*;
 use crate::account_address::AccountAddress;
 use libra_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature},
     test_utils::TEST_SEED,
     HashValue, PrivateKey, SigningKey, Uniform,
 };
-use rand::{rngs::StdRng, SeedableRng};
+use rand::{StdRng, SeedableRng};
 use std::convert::TryFrom;
 
 /// ValidatorSigner associates an author with public and private keys with helpers for signing and

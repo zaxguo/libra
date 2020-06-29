@@ -10,7 +10,14 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.31"
+sgx_tstd = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_trts = { git = "https://github.com/apache/teaclave-sgx-sdk.git"}
+sgx_rand = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+thiserror = { git = "https://github.com/mesalock-linux/thiserror-sgx.git", tag = "sgx_1.1.2" }
+serde = {git = "https://github.com/mesalock-linux/serde-sgx.git", tag = "sgx_1.1.2", features = ["derive"]}
+serde_bytes = {git = "https://github.com/mesalock-linux/serde-bytes-sgx.git", tag = "sgx_1.1.2"}
+anyhow = {git = "https://github.com/mesalock-linux/anyhow-sgx.git", tag = "sgx_1.1.2" }
 bytes = "0.5.5"
 chrono = { version = "0.4.11", default-features = false, features = ["clock"] }
 hex = "0.4.2"
@@ -20,10 +27,6 @@ mirai-annotations = "1.8.0"
 proptest = { version = "0.10.0", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }
 radix_trie = { version = "0.1.6", default-features = false }
-rand = "0.7.3"
-serde = { version = "1.0.114", default-features = false }
-serde_bytes = "0.11.5"
-thiserror = { version = "1.0.20", default-features = false}
 tiny-keccak = { version = "2.0.2", default-features = false, features = ["sha3"] }
 
 lcs = { path = "../lcs-sgx", version = "0.1.0", package = "libra-canonical-serialization-sgx" }
