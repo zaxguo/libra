@@ -34,5 +34,5 @@ ifeq ($(XARGO_SGX), 1)
 	cp ./target/x86_64-unknown-linux-sgx/release/libhelloworldsampleenclave.a ../lib/libenclave.a
 else
 	cargo build --release
-	cp ../../target/release/libhelloworldsampleenclave.a ../lib/libenclave.a
+	cp ../../target/release/liblsr_enclave.a ../lib/libenclave.a
 endif

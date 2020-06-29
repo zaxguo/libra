@@ -11,6 +11,7 @@ members = [
     "common/debug-interface",
     "common/futures-semaphore",
     "common/lcs",
+    "common/lcs-sgx", # sgx port
     "common/logger",
     "common/metrics",
     "common/nibble",

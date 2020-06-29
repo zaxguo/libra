@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License..
 
-#![crate_name = "helloworldsampleenclave"]
+#![crate_name = "lsr_enclave"]
 #![crate_type = "staticlib"]
 
 #![cfg_attr(not(target_env = "sgx"), no_std)]
@@ -37,6 +37,11 @@ use std::io::{self, Write};
 use std::slice;
 use std::backtrace::{self, PrintFormat};
 
+fn test_lcs(word_vec: &Vec<u8>) {
+    let input : String = lcs::from_bytes(word_vec).unwrap();
+    println!("lcs -- {}", input);
+}
+
 #[no_mangle]
 pub extern "C" fn say_something(some_string: *const u8, some_len: usize) -> sgx_status_t {
 
@@ -49,6 +54,8 @@ pub extern "C" fn say_something(some_string: *const u8, some_len: usize) -> sgx_
     let word:[u8;4] = [82, 117, 115, 116];
     // An vector
     let word_vec:Vec<u8> = vec![32, 115, 116, 114, 105, 110, 103, 33];
+
+    test_lcs(&word_vec);
 
     // Construct a string from &'static string
     let mut hello_string = String::from(rust_raw_string);
