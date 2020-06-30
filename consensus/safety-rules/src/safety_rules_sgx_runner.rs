@@ -1,10 +1,7 @@
-/* Copyright (c) Fortanix, Inc.
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /* lwg:
  * The skeleton is from Fortanix example/usercall-extensions-bind
+ * This runner is purely a helper for loading up the lsr enclave, which binds to
+ * a local LSR_SGX_ADDRESS for the byte stream communication
  * */
 
 extern crate aesm_client;
@@ -12,26 +9,16 @@ extern crate enclave_runner;
 extern crate sgxs_loaders;
 
 use aesm_client::AesmClient;
-use enclave_runner::usercalls::{SyncStream, UsercallExtension};
-use std::io::{Read, Write, Result as IoResult};
+use enclave_runner::usercalls::{SyncStream, UsercallExtension, SyncListener};
+use std::io::{Result as IoResult};
+use std::net::{TcpListener};
 use std::thread;
 use enclave_runner::EnclaveBuilder;
 use sgxs_loaders::isgx::Device as IsgxDevice;
-use std::process::{Child, Command, Stdio};
-use tokio::sync::lock::Lock;
-use tokio::prelude::Async;
 
+pub const LSR_SGX_ADDRESS: &str = "localhost:8888";
 
-
-/// This example demonstrates use of usercall extensions for bind call.
-/// User call extension allow the enclave code to "bind" to an external service via a customized enclave runner.
-/// Here we customize the runner to intercept calls to bind to an address and advance the stream before returning it to enclave
-/// This can be useful to strip protocol encapsulations, say while servicing requests load balanced by HA Proxy.
-/// This example demonstrates de-encapsulation for various HA proxy configurations before handing over the stream to the enclave.
-/// To simulate HA proxy configurations, the runner spawns a thread that connects to the same address which enclave binds to and
-/// writes encapsulated test data for various HA proxy configurations to the stream.
-
-fn parse_args() -> Result<String, ()> {
+fn get_enclave_file() -> Result<String, ()> {
 /*
     let args: Vec<String> = std::env::args().collect();
     match args.len() {
@@ -45,67 +32,66 @@ fn parse_args() -> Result<String, ()> {
 	Ok("/home/lwg/libra/target/x86_64-fortanix-unknown-sgx/debug/lsr-sgx.sgxs".into())
 }
 
-struct LSRService{
-    c: Lock<Child>,
+struct SafetyRulesSGXListener {
+    listener: TcpListener,
 }
 
-impl LSRService{
-    fn new() -> Result<LSRService, std::io::Error> {
-        Command::new("/bin/cat")
-            .stdout(Stdio::piped())
-            .stdin(Stdio::piped())
-            .spawn()
-            .map(|c| Lock::new(c))
-            .map(|c| LSRService{ c })
-    }
-}
-
-macro_rules! poll_lock_wouldblock {
-    ($lock:expr) => {
-        match $lock.clone().poll_lock() {
-            Async::NotReady => Err(std::io::ErrorKind::WouldBlock.into()),
-            Async::Ready(ret) => IoResult::Ok(ret),
-        }
+impl SafetyRulesSGXListener {
+     fn new(addr: &str) -> IoResult<(Self, String)> {
+        println!("init service for addr {}...", addr);
+        TcpListener::bind(addr).map(|listener| {
+            let local_address = match listener.local_addr() {
+                Ok(local_address) => local_address.to_string(),
+                Err(_) => "xxx".to_string(),
+            };
+            ( SafetyRulesSGXListener {listener}, local_address)
+        })
     }
 }
 
-
-impl SyncStream for LSRService {
-    fn read(&self, buf: &mut [u8]) -> IoResult<usize> {
-        poll_lock_wouldblock!(self.c)?.stdout.as_mut().unwrap().read(buf)
+impl SyncListener for SafetyRulesSGXListener {
+    fn accept(&self, local_addr: Option<&mut String>, peer_addr: Option<&mut String>) -> IoResult<Box<dyn SyncStream>> {
+        let (mut stream, peer_address_tcp) = self.listener.accept()?;
+        let local_addr_tcp = stream.local_addr()?;
+        eprintln!(
+            "runner:: bind -- local_address is {}, peer_address is {}",
+            local_addr_tcp, peer_address_tcp
+            );
+        Ok(Box::new(stream))
     }
-
-    fn write(&self, buf: &[u8]) -> IoResult<usize> {
-        poll_lock_wouldblock!(self.c)?.stdin.as_mut().unwrap().write(buf)
-    }
-
-    fn flush(&self) -> IoResult<()> {
-        poll_lock_wouldblock!(self.c)?.stdin.as_mut().unwrap().flush()
-    }
-
-
 }
 
+/* lwg: the dummy struct is kind of ugly but has to exist for "initialize" the binding process */
 #[derive(Debug)]
-struct ExternalService;
-// Ignoring local_addr and peer_addr, as they are not relavent in the current context.
-impl UsercallExtension for ExternalService {
-    fn connect_stream(
+struct SGXWrapper;
+impl UsercallExtension for SGXWrapper {
+    /* lwg: this is more like a stub, agreed upon Fortanix ABI to communicate with enclave */
+    fn bind_stream(
         &self,
         addr: &str,
-        _local_addr: Option<&mut String>,
-        _peer_addr: Option<&mut String>,
-    ) -> IoResult<Option<Box<dyn SyncStream>>> {
-        // If the passed address is not "cat", we return none, whereby the passed address gets treated as
-        // an IP address which is the default behavior.
-        match &*addr {
-            "cat" => {
-                let stream = LSRService::new()?;
-                Ok(Some(Box::new(stream)))
+        local_addr: Option<&mut String>,
+    ) -> IoResult<Option<Box<dyn SyncListener>>> {
+        if addr == LSR_SGX_ADDRESS {
+            println!("Trying to bind {}...", addr);
+            let (listener, local_address) = SafetyRulesSGXListener::new(addr)?;
+            println!("Successfully bind to local addr: {}", local_address);
+            if let Some(local_addr) = local_addr {
+                *local_addr = local_address;
             }
-            _ => Ok(None),
+            Ok(Some(Box::new(listener)))
+        } else {
+            Ok(None)
         }
     }
+}
+
+fn test_connect() {
+    thread::sleep(std::time::Duration::from_secs(5));
+    println!("trying to connect ... {}", line!());
+    let mut stream = TcpStream::connect(LSR_CORE_ADDRESS).unwrap();
+    println!("trying to connect ... {}", line!());
+    stream.write_all("shit".as_bytes()).unwrap();
+    stream.shutdown(Shutdown::Write).unwrap();
 }
 
 fn run_server(file: String) -> Result<(), ()> {
@@ -113,25 +99,18 @@ fn run_server(file: String) -> Result<(), ()> {
         .unwrap()
         .einittoken_provider(AesmClient::new())
         .build();
-
-    println!("lwg:the sgx enclave file is {}", file);
-
     let mut enclave_builder = EnclaveBuilder::new(file.as_ref());
     enclave_builder.dummy_signature();
-    enclave_builder.usercall_extension(ExternalService);
+    enclave_builder.usercall_extension(SGXWrapper);
     let enclave = enclave_builder.build(&mut device).unwrap();
-
     enclave.run().map_err(|e| {
         eprintln!("Error in running enclave {}", e);
     })
 }
 
 pub fn start_lsr_enclave() {
-    let file = parse_args().unwrap();
-    let server = thread::spawn(move || run_server(file));
-    let _ = server.join().unwrap();
+    let file = get_enclave_file().unwrap();
+    let _server = thread::spawn(move || run_server(file));
+    thread::sleep(std::time::Duration::from_secs(5));
 }
-
-
-
 

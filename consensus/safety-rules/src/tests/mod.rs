@@ -4,6 +4,7 @@
 mod local;
 mod networking;
 mod safety_rules;
+mod safety_rules_sgx;
 mod serializer;
 mod spawned_process;
 mod suite;
