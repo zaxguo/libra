@@ -128,7 +128,11 @@ members = [
     "testsuite/libra-swarm",
     "types",
     "vm-validator",
-
+    "sgx-sdk/samplecode/hello-rust/enclave",
+    "sgx-libs/types",
+    "sgx-libs/lcs-sgx",
+    "sgx-libs/crypto/crypto",
+    "sgx-libs/crypto/crypto-derive",
 ]
 
 # NOTE: default-members is the complete list of binaries that form the "production Libra codebase". These members should
@@ -159,9 +163,6 @@ default-members = [
     "secure/key-manager",
     "storage/backup/backup-cli",
     "storage/inspector",
-    "sgx-libs",
-    "sgx-libs/lcs-sgx",
-    "sgx-libs/types",
 ]
 
 [profile.release]

@@ -21,12 +21,13 @@
 #![cfg_attr(not(target_env = "sgx"), no_std)]
 #![cfg_attr(target_env = "sgx", feature(rustc_private))]
 
-extern crate sgx_types;
-extern crate sgx_trts;
 #[cfg(not(target_env = "sgx"))]
 #[macro_use]
 extern crate sgx_tstd as std;
 
+
+extern crate sgx_types;
+extern crate sgx_trts;
 use sgx_types::*;
 use sgx_types::metadata::*;
 use sgx_trts::enclave;
@@ -40,7 +41,6 @@ use std::backtrace::{self, PrintFormat};
 mod safety_rules;
 
 fn test_lsr_types() {
-    test_validator_signer();
 }
 
 #[no_mangle]

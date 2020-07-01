@@ -36,6 +36,7 @@ use std::vec::Vec;
 use std::io::{self, Write};
 use std::slice;
 use std::backtrace::{self, PrintFormat};
+use libra_types::validator_signer::ValidatorSigner;
 
 #[no_mangle]
 pub extern "C" fn say_something(some_string: *const u8, some_len: usize) -> sgx_status_t {
@@ -49,6 +50,9 @@ pub extern "C" fn say_something(some_string: *const u8, some_len: usize) -> sgx_
     let word:[u8;4] = [82, 117, 115, 116];
     // An vector
     let word_vec:Vec<u8> = vec![32, 115, 116, 114, 105, 110, 103, 33];
+
+    let a  = ValidatorSigner::from_int(1);
+
 
     // Construct a string from &'static string
     let mut hello_string = String::from(rust_raw_string);

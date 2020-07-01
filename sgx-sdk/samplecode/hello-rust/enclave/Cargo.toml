@@ -2,6 +2,7 @@
 name = "Helloworldsampleenclave"
 version = "1.0.0"
 authors = ["The Teaclave Authors"]
+edition = "2018"
 
 [lib]
 name = "helloworldsampleenclave"
@@ -14,6 +15,7 @@ default = []
 sgx_types = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 sgx_tstd = { git = "https://github.com/apache/teaclave-sgx-sdk.git", features = ["backtrace"] }
 sgx_trts = { git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+libra-types = { path = "../../../../types", version = "0.1.0" }
 [patch.'https://github.com/apache/teaclave-sgx-sdk.git']
 sgx_alloc = { path = "../../../sgx_alloc" }
 sgx_build_helper = { path = "../../../sgx_build_helper" }
