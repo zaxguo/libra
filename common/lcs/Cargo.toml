@@ -9,10 +9,18 @@ license = "Apache-2.0"
 publish = false
 edition = "2018"
 
+#[dependencies]
+#libra-workspace-hack = { path = "../workspace-hack", version = "0.1.0" }
+#thiserror = "1.0.20"
+#serde = { version = "1.0.114", features = ["derive"] }
+
+# supporting SGX, needs to swap out packages
+#[target.'cfg(target_env = "sgx")'.dependencies]
 [dependencies]
-libra-workspace-hack = { path = "../workspace-hack", version = "0.1.0" }
-thiserror = "1.0.20"
-serde = { version = "1.0.114", features = ["derive"] }
+thiserror = { git = "https://github.com/mesalock-linux/thiserror-sgx.git", tag = "sgx_1.1.2"}
+serde = { git = "https://github.com/mesalock-linux/serde-sgx.git", tag = "sgx_1.1.2", features = ["derive"]}
+
+
 
 [dev-dependencies]
 criterion = "0.3.3"

@@ -32,6 +32,7 @@ members = [
     "consensus",
     "consensus/consensus-types",
     "consensus/safety-rules",
+    "consensus/enclave",
     "crypto/crypto",
     "crypto/crypto-derive",
     "devtools/x",

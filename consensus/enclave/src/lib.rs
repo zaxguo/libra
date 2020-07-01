@@ -38,7 +38,6 @@ use std::io::{self, Write};
 use std::slice;
 use std::backtrace::{self, PrintFormat};
 
-mod safety_rules;
 
 fn test_lsr_types() {
 }

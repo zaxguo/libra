@@ -274,6 +274,15 @@
 //! direct provisions for versioning or backwards / forwards compatibility. A change in an objects
 //! structure could prevent historical clients from understanding new clients and vice-versa.
 
+#![cfg_attr(not(target_env = "sgx"), no_std)]
+#![cfg_attr(target_env = "sgx", feature(rustc_private))]
+
+#[cfg(not(target_env = "sgx"))]
+#[macro_use]
+extern crate sgx_tstd as std;
+
+extern crate sgx_trts;
+
 mod de;
 mod error;
 mod ser;
