@@ -11,7 +11,7 @@ edition = "2018"
 
 [lib]
 name = "libra_nibble_sgx"
-path = "../../common/nibble"
+path = "../../common/nibble/src/lib.rs"
 
 [dependencies]
 proptest = { version = "0.10.0", optional = true }
