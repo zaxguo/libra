@@ -131,6 +131,7 @@ members = [
     "sgx-deps/lcs",
     "sgx-deps/types",
     "sgx-deps/crypto/crypto",
+    "sgx-deps/crypto/crypto-derive",
 ]
 
 # NOTE: default-members is the complete list of binaries that form the "production Libra codebase". These members should

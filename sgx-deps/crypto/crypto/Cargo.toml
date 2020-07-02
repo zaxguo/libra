@@ -14,9 +14,12 @@ name = "libra_crypto_sgx"
 path = "../../../crypto/crypto/src/lib.rs"
 
 [dependencies]
-curve25519-dalek = { git = "https://github.com/zaxguo/curve25519-dalek.git", branch = "fiat2", default-features = false }
-ed25519-dalek = { git = "https://github.com/zaxguo/ed25519-dalek.git", branch = "fiat2", features = ["serde"], default-features = false }
-x25519-dalek = { git = "https://github.com/zaxguo/x25519-dalek.git", branch = "fiat2", default-features = false }
+#curve25519-dalek = { git = "https://github.com/zaxguo/curve25519-dalek.git", branch = "fiat2", default-features = false }
+curve25519-dalek = { git = "https://github.com/novifinancial/curve25519-dalek.git", branch = "fiat2", default-features = false }
+#ed25519-dalek = { git = "https://github.com/zaxguo/ed25519-dalek.git", branch = "fiat2", features = ["serde"], default-features = false }
+ed25519-dalek = { git = "https://github.com/novifinancial/ed25519-dalek.git", branch = "fiat2", features = ["serde"], default-features = false }
+#x25519-dalek = { git = "https://github.com/zaxguo/x25519-dalek.git", branch = "fiat2", default-features = false }
+x25519-dalek = { git = "https://github.com/novifinancial/x25519-dalek.git", branch = "fiat2", default-features = false }
 anyhow = { git = "https://github.com/mesalock-linux/anyhow-sgx.git", tag = "sgx_1.1.2" }
 bytes = { git = "https://github.com/mesalock-linux/bytes-sgx.git", tag = "sgx_1.1.2" }
 digest = "0.9.0"
@@ -62,10 +65,3 @@ std = ["curve25519-dalek/std", "ed25519-dalek/std", "x25519-dalek/std"]
 u64_backend = ["curve25519-dalek/u64_backend", "ed25519-dalek/u64_backend", "x25519-dalek/u64_backend"]
 fiat_u64_backend = ["curve25519-dalek/fiat_u64_backend", "ed25519-dalek/fiat_u64_backend", "x25519-dalek/fiat_u64_backend"]
 
-[[bench]]
-name = "hash"
-harness = false
-
-[[bench]]
-name = "noise"
-harness = false
