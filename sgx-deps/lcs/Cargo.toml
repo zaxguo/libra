@@ -1,0 +1,22 @@
+[package]
+name = "libra-canonical-serialization-sgx"
+version = "0.1.0"
+authors = ["Liwei Guo"]
+description = "Libra Canonical Serialization (LCS) SGX"
+repository = "https://github.com/libra/libra"
+homepage = "https://libra.org"
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+
+[lib]
+name = "lcs_sgx"
+path = "../../common/lcs/src/lib.rs"
+
+# supporting SGX, needs to swap out packages
+[dependencies]
+thiserror = { git = "https://github.com/mesalock-linux/thiserror-sgx.git", tag = "sgx_1.1.2"}
+serde = { git = "https://github.com/mesalock-linux/serde-sgx.git", tag = "sgx_1.1.2", features = ["derive"]}
+
+
