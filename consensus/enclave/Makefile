@@ -31,7 +31,7 @@ all: $(Rust_Enclave_Name)
 
 $(Rust_Enclave_Name): $(Rust_Enclave_Files)
 ifeq ($(XARGO_SGX), 1)
-	RUST_BACKTRACE=1 RUSTFLAGS="-Z force-unstable-if-unmarked" RUST_TARGET_PATH=$(Rust_Target_Path) xargo build --target x86_64-unknown-linux-sgx --release --verbose --color always 2>&1 | less -r
+	RUST_BACKTRACE=1 RUSTFLAGS="-Z force-unstable-if-unmarked -Z macro-backtrace" RUST_TARGET_PATH=$(Rust_Target_Path) xargo build --target x86_64-unknown-linux-sgx --release --verbose --color always 2>&1 | less -r
 	cp ./target/x86_64-unknown-linux-sgx/release/libhelloworldsampleenclave.a ../lib/libenclave.a
 else
 	cargo build --release --verbose

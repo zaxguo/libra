@@ -20,8 +20,11 @@ sgx_unwind = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk
 
 [dependencies]
 #libra-types = { path = "../../sgx-libs/types", version = "0.1.0", package = "libra-types-sgx"}
-lcs = { path = "../../sgx-deps/lcs", version = "0.1.0", package = "libra-canonical-serialization-sgx"}
-libra-crypto-derive = { path = "../../sgx-deps/crypto/crypto-derive", version = "0.1.0", package = "libra-crypto-derive-sgx"}
-libra-crypto = { path = "../../sgx-deps/crypto/crypto/", version = "0.1.0", package = "libra-crypto-sgx"}
-#hmac = "0.8.1"
+#lcs = { path = "../../sgx-deps/lcs", version = "0.1.0", package = "libra-canonical-serialization-sgx"}
+#libra-crypto-derive = { path = "../../sgx-deps/crypto/crypto-derive", version = "0.1.0", package = "libra-crypto-derive-sgx"}
+serde = {git  ="https://github.com/mesalock-linux/serde-sgx.git", tag= "sgx_1.1.2", features = ["derive"]}
+serde_bytes = {git  ="https://github.com/mesalock-linux/serde-bytes-sgx.git", tag= "sgx_1.1.2"}
+#libra-crypto-derive = { path = "../../crypto/crypto-derive", version = "0.1.0", package = "libra-crypto-derive"}
+#libra-crypto = { path = "../../sgx-deps/crypto/crypto/", version = "0.1.0", package = "libra-crypto-sgx"}
+libra-crypto = { path = "../../crypto/crypto/", version = "0.1.0", package = "libra-crypto"}
 

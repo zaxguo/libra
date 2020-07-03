@@ -532,6 +532,7 @@ name = "bytes"
 version = "0.5.4"
 source = "git+https://github.com/mesalock-linux/bytes-sgx.git?tag=sgx_1.1.2#a653b10f67641750a6dfa302ef4242a64e6eeb5f"
 dependencies = [
+ "serde 1.0.106 (git+https://github.com/mesalock-linux/serde-sgx.git)",
  "sgx_tstd 1.1.2 (git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.2)",
 ]
 
@@ -1135,7 +1136,6 @@ source = "git+https://github.com/novifinancial/curve25519-dalek.git?branch=fiat2
 dependencies = [
  "byteorder 1.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "digest 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "fiat-crypto 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_core 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle 2.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "zeroize 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1341,9 +1341,6 @@ source = "git+https://github.com/calibra/ed25519-dalek.git?branch=fiat2#98bb7a38
 dependencies = [
  "clear_on_drop 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "curve25519-dalek 2.0.0 (git+https://github.com/novifinancial/curve25519-dalek.git?branch=fiat2)",
- "merlin 1.2.1 (git+https://github.com/isislovecruft/merlin?branch=develop)",
- "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.114 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2476,37 +2473,31 @@ name = "libra-crypto"
 version = "0.1.0"
 dependencies = [
  "aes-gcm 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "anyhow 1.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
- "bitvec 0.17.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "byteorder 1.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "bytes 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "criterion 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "curve25519-dalek 2.0.0 (git+https://github.com/novifinancial/curve25519-dalek.git?branch=fiat2)",
+ "anyhow 1.0.28 (git+https://github.com/mesalock-linux/anyhow-sgx.git?tag=sgx_1.1.2)",
+ "bytes 0.5.4 (git+https://github.com/mesalock-linux/bytes-sgx.git?tag=sgx_1.1.2)",
+ "curve25519-dalek 2.0.0 (git+https://github.com/zaxguo/curve25519-dalek.git?branch=fiat2)",
  "digest 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "ed25519-dalek 1.0.0-pre.3 (git+https://github.com/calibra/ed25519-dalek.git?branch=fiat2)",
+ "ed25519-dalek 1.0.0-pre.3 (git+https://github.com/zaxguo/ed25519-dalek.git?branch=fiat2)",
  "hex 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "hmac 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "libra-canonical-serialization 0.1.0",
+ "libra-canonical-serialization-sgx 0.1.0",
  "libra-crypto-derive 0.1.0",
- "libra-nibble 0.1.0",
- "libra-workspace-hack 0.1.0",
+ "libra-nibble-sgx 0.1.0",
  "mirai-annotations 1.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "once_cell 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest-derive 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand_core 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "ripemd160 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde 1.0.114 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde-name 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_bytes 0.11.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.56 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.7.3 (git+https://github.com/mesalock-linux/rand-sgx.git?tag=sgx_1.1.2)",
+ "rand_core 0.5.1 (git+https://github.com/mesalock-linux/rand-sgx.git?tag=sgx_1.1.2)",
+ "serde 1.0.106 (git+https://github.com/mesalock-linux/serde-sgx.git?tag=sgx_1.1.2)",
+ "serde-name 0.1.0",
+ "serde_bytes 0.11.3 (git+https://github.com/mesalock-linux/serde-bytes-sgx.git?tag=sgx_1.1.2)",
  "sha2 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha3 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror 1.0.9 (git+https://github.com/mesalock-linux/thiserror-sgx.git?tag=sgx_1.1.2)",
  "tiny-keccak 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "x25519-dalek 0.6.0 (git+https://github.com/calibra/x25519-dalek.git?branch=fiat2)",
+ "x25519-dalek 0.6.0 (git+https://github.com/zaxguo/x25519-dalek.git?branch=fiat2)",
 ]
 
 [[package]]
@@ -2514,9 +2505,9 @@ name = "libra-crypto-derive"
 version = "0.1.0"
 dependencies = [
  "anyhow 1.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
- "libra-workspace-hack 0.1.0",
  "proc-macro2 1.0.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.106 (git+https://github.com/mesalock-linux/serde-sgx.git?tag=sgx_1.1.2)",
  "syn 1.0.33 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2546,7 +2537,7 @@ dependencies = [
  "hex 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "hmac 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libra-canonical-serialization-sgx 0.1.0",
- "libra-crypto-derive-sgx 0.1.0",
+ "libra-crypto-derive 0.1.0",
  "libra-nibble-sgx 0.1.0",
  "mirai-annotations 1.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "once_cell 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2556,6 +2547,7 @@ dependencies = [
  "rand_core 0.5.1 (git+https://github.com/mesalock-linux/rand-sgx.git?tag=sgx_1.1.2)",
  "ripemd160 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.106 (git+https://github.com/mesalock-linux/serde-sgx.git?tag=sgx_1.1.2)",
+ "serde-name 0.1.0",
  "serde_bytes 0.11.3 (git+https://github.com/mesalock-linux/serde-bytes-sgx.git?tag=sgx_1.1.2)",
  "serde_json 1.0.56 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3166,12 +3158,7 @@ dependencies = [
 name = "libra-workspace-hack"
 version = "0.1.0"
 dependencies = [
- "bytes 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "cc 1.0.56 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "memchr 2.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "num-traits 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)",
- "petgraph 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bytes 0.5.4 (git+https://github.com/mesalock-linux/bytes-sgx.git?tag=sgx_1.1.2)",
  "serde 1.0.114 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha-1 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "subtle 2.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3264,9 +3251,9 @@ dependencies = [
 name = "lsr_enclave"
 version = "1.0.0"
 dependencies = [
- "libra-canonical-serialization-sgx 0.1.0",
- "libra-crypto-derive-sgx 0.1.0",
- "libra-crypto-sgx 0.1.0",
+ "libra-crypto 0.1.0",
+ "serde 1.0.106 (git+https://github.com/mesalock-linux/serde-sgx.git?tag=sgx_1.1.2)",
+ "serde_bytes 0.11.3 (git+https://github.com/mesalock-linux/serde-bytes-sgx.git?tag=sgx_1.1.2)",
  "sgx_trts 1.1.2 (git+https://github.com/apache/teaclave-sgx-sdk.git)",
  "sgx_tstd 1.1.2 (git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.2)",
  "sgx_types 1.1.2 (git+https://github.com/apache/teaclave-sgx-sdk.git)",
@@ -3314,17 +3301,6 @@ dependencies = [
  "futures 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "libra-workspace-hack 0.1.0",
  "once_cell 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "merlin"
-version = "1.2.1"
-source = "git+https://github.com/isislovecruft/merlin?branch=develop#c483190db3506732691d4a502a97de9774642111"
-dependencies = [
- "byteorder 1.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "clear_on_drop 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "keccak 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand_core 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -5166,10 +5142,9 @@ dependencies = [
 [[package]]
 name = "serde-name"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "serde 1.0.114 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.106 (git+https://github.com/mesalock-linux/serde-sgx.git?tag=sgx_1.1.2)",
+ "thiserror 1.0.9 (git+https://github.com/mesalock-linux/thiserror-sgx.git?tag=sgx_1.1.2)",
 ]
 
 [[package]]
@@ -6840,16 +6815,6 @@ dependencies = [
 [[package]]
 name = "x25519-dalek"
 version = "0.6.0"
-source = "git+https://github.com/calibra/x25519-dalek.git?branch=fiat2#2cd269742922403a588af0872e3b06fe4ef89d0e"
-dependencies = [
- "curve25519-dalek 2.0.0 (git+https://github.com/novifinancial/curve25519-dalek.git?branch=fiat2)",
- "rand_core 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "zeroize 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "x25519-dalek"
-version = "0.6.0"
 source = "git+https://github.com/zaxguo/x25519-dalek.git?branch=fiat2#22642ada9cca76a5e4e40cf75153b415b86ba9af"
 dependencies = [
  "curve25519-dalek 2.0.0 (git+https://github.com/zaxguo/curve25519-dalek.git?branch=fiat2)",
@@ -7084,7 +7049,6 @@ dependencies = [
 "checksum md5 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 "checksum memchr 2.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "3728d817d99e5ac407411fa471ff9800a778d88a24685968b36824eaf4bee400"
 "checksum memoffset 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)" = "b4fc2c02a7e374099d4ee95a193111f72d2110197fe200272371758f6c3643d8"
-"checksum merlin 1.2.1 (git+https://github.com/isislovecruft/merlin?branch=develop)" = "<none>"
 "checksum merlin 2.0.0 (git+https://github.com/isislovecruft/merlin?branch=develop)" = "<none>"
 "checksum mime 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "ba626b8a6de5da682e1caa06bdb42a335aee5a84db8e5046a3e8ab17ba0a3ae0"
 "checksum mime 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)" = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
@@ -7235,7 +7199,6 @@ dependencies = [
 "checksum serde 1.0.106 (git+https://github.com/mesalock-linux/serde-sgx.git?tag=sgx_1.1.2)" = "<none>"
 "checksum serde 1.0.114 (registry+https://github.com/rust-lang/crates.io-index)" = "5317f7588f0a5078ee60ef675ef96735a1442132dc645eb1d12c018620ed8cd3"
 "checksum serde-generate 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "005da9f0eabee96fe80910017d405a6d5c8ddd01e03147ba0d438e620da0c3d6"
-"checksum serde-name 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "92bb32dbe1df50291d7d00b5e573acb2c70b783baf3d1bce2d19c86be11c709e"
 "checksum serde-reflection 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5820d2a74b1f0694d959f48660bc52fa922239d5c2f6dcc17261c5307967b9e5"
 "checksum serde-value 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "5a65a7291a8a568adcae4c10a677ebcedbc6c9cec91c054dee2ce40b0e3290eb"
 "checksum serde_bytes 0.11.3 (git+https://github.com/mesalock-linux/serde-bytes-sgx.git?tag=sgx_1.1.2)" = "<none>"
@@ -7376,7 +7339,6 @@ dependencies = [
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 "checksum winreg 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0120db82e8a1e0b9fb3345a539c478767c0048d842860994d96113d5b667bd69"
 "checksum ws2_32-sys 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d59cefebd0c892fa2dd6de581e937301d8552cb44489cdff035c6187cb63fa5e"
-"checksum x25519-dalek 0.6.0 (git+https://github.com/calibra/x25519-dalek.git?branch=fiat2)" = "<none>"
 "checksum x25519-dalek 0.6.0 (git+https://github.com/zaxguo/x25519-dalek.git?branch=fiat2)" = "<none>"
 "checksum xml-rs 0.8.3 (registry+https://github.com/rust-lang/crates.io-index)" = "b07db065a5cf61a7e4ba64f29e67db906fb1787316516c4e6e5ff0fea1efcd8a"
 "checksum yaml-rust 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "39f0c922f1a334134dc2f7a8b67dc5d25f0735263feec974345ff706bcf20b0d"

@@ -38,9 +38,10 @@ use std::io::{self, Write};
 use std::slice;
 use std::backtrace::{self, PrintFormat};
 
+use libra_crypto_derive::{SilentDebug, SerializeKey};
 
-fn test_lsr_types() {
-}
+#[derive(SilentDebug, SerializeKey)]
+pub struct Hello;
 
 #[no_mangle]
 pub extern "C" fn say_something(some_string: *const u8, some_len: usize) -> sgx_status_t {

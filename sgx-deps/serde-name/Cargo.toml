@@ -1,0 +1,22 @@
+[package]
+name = "serde-name"
+version = "0.1.0"
+description = "Extract the Serde name of structs and enums"
+documentation = "https://docs.rs/serde-name"
+repository = "https://github.com/facebookincubator/serde-reflection"
+authors = ["Mathieu Baudet <mathieubaudet@calibra.com>", "Brandon Williams <bmwill@calibra.com>"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["data-structures", "serialization", "serde"]
+categories = ["encoding", "development-tools"]
+edition = "2018"
+exclude = [
+    # Readme template that doesn't need to be included.
+    "README.tpl",
+]
+
+[dependencies]
+thiserror = { git = "https://github.com/mesalock-linux/thiserror-sgx.git", tag = "sgx_1.1.2" }
+serde = {git = "https://github.com/mesalock-linux/serde-sgx.git", tag = "sgx_1.1.2", features = ["derive"]}
+
+
