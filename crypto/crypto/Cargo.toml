@@ -28,7 +28,8 @@ proptest = { version = "0.10.0", optional = true }
 proptest-derive = { version = "0.2.0", optional = true }
 rand = {git = "https://github.com/mesalock-linux/rand-sgx.git", tag = "sgx_1.1.2"}
 rand_core = {git = "https://github.com/mesalock-linux/rand-sgx.git", tag = "sgx_1.1.2"}
-serde = {git = "https://github.com/mesalock-linux/serde-sgx.git", tag = "sgx_1.1.2", features = ["derive"]}
+#serde = {git = "https://github.com/mesalock-linux/serde-sgx.git", tag = "sgx_1.1.2", features = ["derive"]}
+serde = {git = "https://github.com/mesalock-linux/serde-sgx.git", version = "1.0", features = ["derive"]}
 serde_bytes = {git = "https://github.com/mesalock-linux/serde-bytes-sgx.git", tag = "sgx_1.1.2"}
 #serde-name = "0.1.0"
 serde-name = { path = "../../sgx-deps/serde-name" }
@@ -40,7 +41,8 @@ sha3 = "0.9.1"
 aes-gcm = "0.6.0"
 #libra-crypto-derive = { path = "../../../crypto/crypto-derive", version = "0.1.0", package = "libra-crypto-derive"}
 libra-crypto-derive = { path = "../crypto-derive", version = "0.1.0", package = "libra-crypto-derive"}
-lcs = { path = "../../sgx-deps/lcs", version = "0.1.0", package = "libra-canonical-serialization-sgx" }
+#lcs = { path = "../../sgx-deps/lcs", version = "0.1.0", package = "libra-canonical-serialization-sgx" }
+lcs = { path = "../../common/lcs", version = "0.1.0", package = "libra-canonical-serialization" }
 libra-nibble = { path = "../../sgx-deps/nibble", version = "0.1.0", package = "libra-nibble-sgx"}
 #libra-workspace-hack = { path = "../../common/workspace-hack", version = "0.1.0" }
 
