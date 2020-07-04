@@ -38,10 +38,12 @@ use std::io::{self, Write};
 use std::slice;
 use std::backtrace::{self, PrintFormat};
 
-use libra_crypto_derive::{SilentDebug, SerializeKey};
+use libra_crypto::{ed25519::Ed25519PrivateKey, Uniform};
 
-#[derive(SilentDebug, SerializeKey)]
-pub struct Hello;
+pub fn test_key() {
+    let a = Ed25519PrivateKey::generate_for_testing();
+}
+
 
 #[no_mangle]
 pub extern "C" fn say_something(some_string: *const u8, some_len: usize) -> sgx_status_t {
