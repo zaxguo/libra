@@ -1,0 +1,23 @@
+[package]
+name = "libra-crypto-derive"
+version = "0.1.0"
+authors = ["Libra Association <opensource@libra.org>"]
+description = "Libra custom derives for `libra-crypto`"
+repository = "https://github.com/libra/libra"
+homepage = "https://libra.org"
+license = "Apache-2.0"
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+libra-workspace-hack = { path = "../../common/workspace-hack", version = "0.1.0" }
+serde = {git = "https://github.com/mesalock-linux/serde-sgx.git", tag = "sgx_1.1.2", features = ["derive"]}
+serde_bytes = {git = "https://github.com/mesalock-linux/serde-bytes-sgx.git", tag = "sgx_1.1.2"}
+syn = { version = "1.0.33", features = ["derive"] }
+quote = "1.0.7"
+proc-macro2 = "1.0.18"
+
+[dev-dependencies]
+anyhow = "1.0.31"

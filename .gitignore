@@ -47,3 +47,15 @@ move_build_output/
 # Docker incremental build temporary files and directories
 target-out-docker
 **/Dockerfile.tmp
+
+# SGX obj file and bin
+consensus/bin/*
+consensus/lib/*
+*.a
+*.o
+Enclave_u.c
+Enclave_u.h
+Enclave_t.c
+Enclave_t.h
+
+

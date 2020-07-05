@@ -292,6 +292,7 @@ pub trait Uniform {
         Self: Sized,
     {
         let mut rng: StdRng = SeedableRng::from_seed(crate::test_utils::TEST_SEED);
+        //let mut rng: StdRng = SeedableRng::from_seed([0u8; 32]);
         Self::generate(&mut rng)
     }
 }
