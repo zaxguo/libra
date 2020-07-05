@@ -39,9 +39,13 @@ use std::slice;
 use std::backtrace::{self, PrintFormat};
 
 use libra_crypto::{ed25519::Ed25519PrivateKey, Uniform};
+use libra_types::{validator_signer::ValidatorSigner};
 
 pub fn test_key() {
     let a = Ed25519PrivateKey::generate_for_testing();
+    println!("key a = {:#?}", a);
+    let b = ValidatorSigner::from_int(0);
+    println!("singer b = {:#?}", b);
 }
 
 

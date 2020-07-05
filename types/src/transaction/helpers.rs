@@ -6,8 +6,12 @@ use crate::{
     transaction::{RawTransaction, SignedTransaction, TransactionPayload},
 };
 use anyhow::Result;
+use chrono::Duration;
+use chrono::TimeZone;
 use chrono::Utc;
 use libra_crypto::{ed25519::*, hash::CryptoHash, test_utils::KeyPair, traits::SigningKey};
+use std::time::*;
+use std::untrusted::time::SystemTimeEx;
 
 pub fn create_unsigned_txn(
     payload: TransactionPayload,
@@ -18,6 +22,7 @@ pub fn create_unsigned_txn(
     gas_currency_code: String,
     txn_expiration: i64, // for compatibility with UTC's timestamp.
 ) -> RawTransaction {
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     RawTransaction::new(
         sender_address,
         sender_sequence_number,
@@ -25,7 +30,8 @@ pub fn create_unsigned_txn(
         max_gas_amount,
         gas_unit_price,
         gas_currency_code,
-        std::time::Duration::new((Utc::now().timestamp() + txn_expiration) as u64, 0),
+        //std::time::Duration::new((Utc::now().timestamp() + txn_expiration) as u64, 0),
+        std::time::Duration::new((now.as_secs() as i64 + txn_expiration) as u64, 0),
     )
 }
 

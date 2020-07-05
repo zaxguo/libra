@@ -17,8 +17,8 @@ bytes = { git = "https://github.com/mesalock-linux/bytes-sgx.git", tag = "sgx_1.
 #memchr = { version = "2.3.3", features = ["std", "use_std"] }
 #num-traits = { version = "0.2.12", features = ["std"] }
 #petgraph = { version = "0.5.1", features = ["graphmap", "matrix_graph", "stable_graph"] }
-#serde = {git = "https://github.com/mesalock-linux/serde-sgx.git", tag = "sgx_1.1.2", features = ["derive"]}
-serde = { version = "1.0", features = ["derive"]}
+serde = {git = "https://github.com/mesalock-linux/serde-sgx.git", version = "1.0", features = ["derive"]}
+#serde = { version = "1.0", features = ["derive"]}
 sha-1 = { version = "0.9.1", features = ["std"] }
 subtle = { version = "2.2.3", features = ["i128", "std"] }
 syn = { version = "1.0.33", features = ["clone-impls", "derive", "extra-traits", "fold", "full", "parsing", "printing", "proc-macro", "quote", "visit", "visit-mut"] }

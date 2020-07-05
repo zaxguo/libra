@@ -27,4 +27,5 @@ sgx_unwind = { rev = "v1.1.2", git = "https://github.com/apache/teaclave-sgx-sdk
 #libra-crypto-derive = { path = "../../crypto/crypto-derive", version = "0.1.0", package = "libra-crypto-derive
 #libra-crypto = { path = "../../sgx-deps/crypto/crypto/", version = "0.1.0", package = "libra-crypto-sgx"}
 libra-crypto = { path = "../../crypto/crypto/", version = "0.1.0", package = "libra-crypto"}
+libra-types = { path = "../../types", version = "0.1.0", package = "libra-types"}
 
