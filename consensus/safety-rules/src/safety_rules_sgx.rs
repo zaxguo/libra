@@ -11,7 +11,7 @@ use consensus_types::{
 };
 use libra_crypto::ed25519::Ed25519Signature;
 use libra_types::epoch_change::EpochChangeProof;
-use std::io::{self, Write};
+use std::io::{self, Write, Read, BufReader, BufRead};
 use std::net::{TcpStream, Shutdown};
 use std::str;
 use serde::{Serialize, Deserialize};
@@ -46,24 +46,70 @@ impl SafetyRulesSGX {
         TcpStream::connect(safety_rules_sgx_runner::LSR_SGX_ADDRESS).unwrap()
     }
 
-    fn handle_storage_get_set(&self, command: StorageCommand) {
+    fn prepare_storage_reply(&self, reply: Vec<u8>) -> Vec<u8> {
+        let len: i32 = reply.len() as i32;
+        let mut msg = lcs::to_bytes(&len).unwrap();
+        msg.extend(reply);
+        msg
     }
 
-    fn handle_storage_reqs(&self, stream: &mut TcpStream) {
+    fn handle_storage_command(&self, command: &str) -> Vec<u8> {
+        match command {
+            "get:epoch" => {
+                let epoch = self.persistent_storage.epoch().unwrap();
+                println!("epoch = {}", epoch);
+                lcs::to_bytes(&epoch).unwrap()
+            }
+            "get:preferred_round" => {
+                let round = self.persistent_storage.preferred_round().unwrap();
+                println!("preferred round = {}", round);
+                lcs::to_bytes(&round).unwrap()
+            }
+            "get:last_voted_round" => {
+                let round = self.persistent_storage.last_voted_round().unwrap();
+                println!("last round = {}", round);
+                lcs::to_bytes(&round).unwrap()
+            }
+            "get:waypoint" => {
+               let waypoint = self.persistent_storage.waypoint().unwrap();
+               println!("waypoint = {}", waypoint);
+               lcs::to_bytes(&waypoint).unwrap()
+            }
+            _ => {
+               println!("I am not supposed to be here :(");
+               Vec::new()
+            }
+        }
+    }
+
+    fn handle_storage_reqs(&self, mut stream: TcpStream) {
         let mut buf = [0u8; 256];
         println!("waiting for storage reqs...local_addr = {:?}, peer_addr = {:?}",
             stream.local_addr(),
             stream.peer_addr());
-        stream.set_nonblocking(true).expect("Cannot set nonblocking..why?");
+        stream.set_nonblocking(true).expect("Cannot set nonblocking..Boom");
         loop {
             match stream.peek(&mut buf) {
                 Ok(len) => {
-                    let reply = str::from_utf8(&buf).unwrap().trim_matches(char::from(0));
-                    if reply == "done" {
+                    // consume the bytes
+                    let mut req = String::new();
+                    let mut reader = BufReader::new(stream.try_clone().unwrap());
+                    let _reply = reader.read_line(&mut req).unwrap();
+                    let req = req.as_str().trim();
+                    if len == 0 {
+                        continue;
+                    }
+                    if req == "done" {
                         println!("storage services finished. about to close.");
                         break;
                     } else {
-                        println!("reply is: {}", reply);
+                        // handle storage command (i.e. ocall)
+                        println!("requested storage services: {}", req);
+                        let reply = self.handle_storage_command(req);
+                        let reply = self.prepare_storage_reply(reply);
+                        println!("reply = {:#?}", reply);
+                        // reply.extend("\n".as_bytes());
+                        stream.write(&reply).unwrap();
                     }
                 }
                 Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
@@ -98,8 +144,7 @@ impl TSafetyRules for SafetyRulesSGX {
         let msg: Vec<u8> = "req:consensus_state\n".as_bytes().iter().cloned().collect();
         let mut stream = self.connect_sgx();
         stream.write(msg.as_ref()).unwrap();
-        println!("successfully write to the stream...");
-        self.handle_storage_reqs(&mut stream);
+        self.handle_storage_reqs(stream.try_clone().unwrap());
         Err(Error::NotInitialized("Unimplemented".into()))
     }
 

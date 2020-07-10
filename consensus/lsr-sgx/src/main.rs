@@ -12,22 +12,9 @@ use consensus_types::{
 use crate::{safety_rules::SafetyRules};
 mod safety_rules;
 mod consensus_state;
+mod storage_proxy;
 
 pub const LSR_SGX_ADDRESS: &str = "localhost:8888";
-
-
-struct LSRCore {
-    stream: TcpStream,
-}
-
-impl LSRCore {
-    pub fn new(stream: TcpStream) -> Self {
-        Self {
-            stream
-        }
-    }
-
-}
 
 /* this works for using ValidatorSigner */
 fn test_validator_signer() {
@@ -40,7 +27,7 @@ fn test_data_types() {
     test_validator_signer();
 }
 
-fn process_safety_rules_reqs(lsr: &mut SafetyRules, stream: &TcpStream) -> Result<()> {
+fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Result<()> {
     eprintln!("LSR_CORE: received a new incoming req...");
     let peer_addr = stream.peer_addr()?;
     let local_addr = stream.local_addr()?;
@@ -48,15 +35,12 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, stream: &TcpStream) -> Resul
         "LSR_CORE: accept meesage from local {:?}, peer {:?}, stream = {:?}",
         local_addr, peer_addr, stream
     );
-    let mut reader = BufReader::new(stream);
+    let mut reader = BufReader::new(&stream);
     let mut request = String::new();
-    eprintln!("About to read...");
     let read_bytes = reader.read_line(&mut request).unwrap();
-    eprintln!("finish reading {} bytes...", read_bytes);
     // fill the read of buf
     //let buf = reader.fill_buf().unwrap();
     let buf = reader.buffer();
-    eprintln!("buf = {:?}", buf);
     match request.as_str().trim() {
         "req:init" => {
             // fill the read of buf
@@ -64,10 +48,8 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, stream: &TcpStream) -> Resul
             eprintln!("{} -- {:#?}", request, input);
         }
         "req:consensus_state" => {
-            let response = lsr.consensus_state();
-            let mut stream = BufReader::new(stream.try_clone().unwrap());
-            stream.get_mut().write_all("done".as_bytes()).unwrap();
-            eprintln!("{} -- {:?}", request, buf);
+            let response = lsr.consensus_state(stream.try_clone().unwrap());
+            println!("{:#?}", response);
         }
         "req:construct_and_sign_vote" => {
             let input: MaybeSignedVoteProposal = lcs::from_bytes(buf).unwrap();
@@ -85,7 +67,10 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, stream: &TcpStream) -> Resul
             eprintln!("invalid req...{}", request);
         }
     }
-  Ok(())
+    //let mut stream = BufReader::new(stream.try_clone().unwrap());
+    //stream.get_mut().write_all("done".as_bytes()).unwrap();
+    stream.write("done\n".as_bytes()).unwrap();
+    Ok(())
 }
 
 fn main() -> Result<()> {
@@ -96,7 +81,8 @@ fn main() -> Result<()> {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                process_safety_rules_reqs(&mut safety_rules, &stream)?;
+                safety_rules.set_storage_proxy(stream.try_clone().unwrap());
+                process_safety_rules_reqs(&mut safety_rules, stream.try_clone().unwrap())?;
             }
             Err(_) => {
                 eprintln!("unable to connect...");

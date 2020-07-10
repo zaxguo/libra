@@ -1,6 +1,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#[allow(dead_code)]
 use crate::{test_utils, Error, SafetyRules, TSafetyRules};
 use consensus_types::{
     block::block_test_utils::random_payload, common::Round, quorum_cert::QuorumCert,
