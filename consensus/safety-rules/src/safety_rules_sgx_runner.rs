@@ -92,15 +92,6 @@ impl UsercallExtension for SGXService{
     }
 }
 
-fn test_connect() {
-    thread::sleep(std::time::Duration::from_secs(5));
-    println!("trying to connect ... {}", line!());
-    let mut stream = TcpStream::connect(LSR_CORE_ADDRESS).unwrap();
-    println!("trying to connect ... {}", line!());
-    stream.write_all("shit".as_bytes()).unwrap();
-    stream.shutdown(Shutdown::Write).unwrap();
-}
-
 fn run_server(file: String) -> Result<(), ()> {
     let mut device = IsgxDevice::new()
         .unwrap()
