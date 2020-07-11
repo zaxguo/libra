@@ -3,7 +3,7 @@ set -e
 ENCLAVE_NAME=lsr-sgx
 
 # Build target path
-TARGET_PATH=../../target/x86_64-fortanix-unknown-sgx/debug/$ENCLAVE_NAME
+TARGET_PATH=../../../target/x86_64-fortanix-unknown-sgx/debug/$ENCLAVE_NAME
 
 
 cargo +nightly build --target=x86_64-fortanix-unknown-sgx

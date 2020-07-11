@@ -8,6 +8,6 @@ edition = "2018"
 
 [dependencies]
 serde = { version = "1.0.114", default-features = false }
-lcs = { path = "../../common/lcs", version = "0.1.0", package = "libra-canonical-serialization" }
-libra-types = { path = "../../types", version = "0.1.0" }
-consensus-types = { path = "../consensus-types", version = "0.1.0" }
+lcs = { path = "../../../common/lcs", version = "0.1.0", package = "libra-canonical-serialization" }
+libra-types = { path = "../../../types", version = "0.1.0" }
+consensus-types = { path = "../../consensus-types", version = "0.1.0" }

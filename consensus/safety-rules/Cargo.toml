@@ -33,7 +33,6 @@ enclave-runner = "0.2.0"
 #aesm-client = "0.5.0"
 aesm-client = { version = "0.2", features = ["sgxs"]}
 sgxs-loaders = "0.2.2"
-tokio = "0.1.22"
 
 [dev-dependencies]
 criterion = "0.3.3"
