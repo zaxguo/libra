@@ -13,6 +13,7 @@ use crate::{safety_rules::SafetyRules};
 mod safety_rules;
 mod consensus_state;
 mod storage_proxy;
+mod error;
 
 pub const LSR_SGX_ADDRESS: &str = "localhost:8888";
 
@@ -45,6 +46,7 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
         "req:init" => {
             // fill the read of buf
             let input: EpochChangeProof = lcs::from_bytes(buf).unwrap();
+            lsr.initialize(&input).unwrap();
             eprintln!("{} -- {:#?}", request, input);
         }
         "req:consensus_state" => {

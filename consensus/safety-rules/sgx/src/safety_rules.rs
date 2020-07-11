@@ -1,6 +1,8 @@
+use anyhow::Result;
 use libra_types::{
     validator_signer::ValidatorSigner,
     epoch_change::EpochChangeProof,
+    epoch_state::EpochState,
     waypoint::Waypoint,
 };
 use consensus_types::{
@@ -14,12 +16,16 @@ use std::io::prelude::*;
 use std::io::{BufReader};
 use std::net::{TcpStream};
 
-use crate::consensus_state::ConsensusState;
-use crate::storage_proxy::StorageProxy;
+use crate::{
+    consensus_state::ConsensusState,
+    storage_proxy::StorageProxy,
+    error::Error,
+};
 
 pub struct SafetyRules {
     validator_signer: ValidatorSigner,
     storage_proxy: StorageProxy,
+    epoch_state: Option<EpochState>,
 }
 
 impl SafetyRules {
@@ -28,6 +34,7 @@ impl SafetyRules {
         Self {
             validator_signer: ValidatorSigner::from_int(1),
             storage_proxy: StorageProxy::new(None),
+            epoch_state: None,
         }
     }
 
@@ -36,7 +43,34 @@ impl SafetyRules {
         self.storage_proxy = StorageProxy::new(Some(proxy));
     }
 
-    pub fn initialize(&mut self, proof: &EpochChangeProof) {
+    pub fn initialize(&mut self, proof: &EpochChangeProof) -> Result<(), Error> {
+        eprintln!("Initializing...");
+
+        let waypoint = self.storage_proxy.waypoint();
+        let last_li = proof
+            .verify(&waypoint)
+            .map_err(|e| Error::InvalidEpochChangeProof(format!("{}", e)))?;
+        let ledger_info = last_li.ledger_info();
+        let epoch_state = ledger_info
+            .next_epoch_state()
+            .cloned().
+            ok_or(Error::InvalidLedgerInfo)?;
+
+        let author = self.storage_proxy.author();
+        if let Some(expected_key) = epoch_state.verifier.get_public_key(&author) {
+            // TODO:reconcile key
+        }
+        let current_epoch = self.storage_proxy.epoch();
+
+        if current_epoch < epoch_state.epoch {
+            self.storage_proxy.set_waypoint(&Waypoint::new_epoch_boundary(ledger_info)?)?;
+            self.storage_proxy.set_last_voted_round(0)?;
+            self.storage_proxy.set_preferred_round(0)?;
+            self.storage_proxy.set_last_vote(None)?;
+            self.storage_proxy.set_epoch(epoch_state.epoch)?;
+        }
+        self.epoch_state = Some(epoch_state);
+        Ok(())
     }
 
     pub fn construct_and_sign_proposal(&mut self, vote_proposal: &MaybeSignedVoteProposal) {

@@ -104,6 +104,7 @@ impl SafetyRulesSGX {
                         break;
                     } else {
                         // handle storage command (i.e. ocall)
+                        // TODO: separate get and set
                         println!("requested storage services: {}", req);
                         let reply = self.handle_storage_command(req);
                         let reply = self.prepare_storage_reply(reply);

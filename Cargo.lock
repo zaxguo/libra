@@ -3237,10 +3237,12 @@ dependencies = [
 name = "lsr-sgx"
 version = "0.1.0"
 dependencies = [
+ "anyhow 1.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "consensus-types 0.1.0",
  "libra-canonical-serialization 0.1.0",
  "libra-types 0.1.0",
  "serde 1.0.114 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
