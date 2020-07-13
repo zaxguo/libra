@@ -10,7 +10,10 @@ use consensus_types::{
             vote_proposal::MaybeSignedVoteProposal,
 };
 use libra_crypto::ed25519::Ed25519Signature;
-use libra_types::epoch_change::EpochChangeProof;
+use libra_types::{
+    epoch_change::EpochChangeProof,
+    waypoint::Waypoint
+};
 use std::io::{self, Write, Read, BufReader, BufRead};
 use std::net::{TcpStream, Shutdown};
 use std::str;
@@ -53,7 +56,33 @@ impl SafetyRulesSGX {
         msg
     }
 
-    fn handle_storage_command(&self, command: &str) -> Vec<u8> {
+    fn get_sgx_payload(&self, stream: &mut BufReader<TcpStream>) -> Vec<u8> {
+        let mut buf = [0u8; 4];
+        stream.read_exact(&mut buf).unwrap();
+        let len: i32 = lcs::from_bytes(&buf).unwrap();
+        let mut payload = vec![0u8; len as usize];
+        stream.read_exact(&mut payload).unwrap();
+        payload
+    }
+
+    // Although current impl of LSR persistent storage uniformly returns Ok(()) on
+    // any ``set'', we still want some assurance that the command hits the storage by
+    // the time we go back to SGX. Hence we return the exact content being written to
+    // SGX.
+    fn handle_set(&mut self, command: &str, payload: &[u8]) -> Vec<u8> {
+        match command {
+            "set:waypoint" => {
+                let waypoint: Waypoint = lcs::from_bytes(payload).unwrap();
+                self.persistent_storage.set_waypoint(&waypoint).unwrap();
+                lcs::to_bytes(&waypoint).unwrap()
+            }
+            _ => {
+                Vec::new()
+            }
+        }
+    }
+
+    fn handle_get(&self, command: &str) -> Vec<u8> {
         match command {
             "get:epoch" => {
                 let epoch = self.persistent_storage.epoch().unwrap();
@@ -75,6 +104,11 @@ impl SafetyRulesSGX {
                println!("waypoint = {}", waypoint);
                lcs::to_bytes(&waypoint).unwrap()
             }
+            "get:author" => {
+                let author = self.persistent_storage.author().unwrap();
+                println!("author = {}", author);
+                lcs::to_bytes(&author).unwrap()
+            }
             _ => {
                println!("I am not supposed to be here :(");
                Vec::new()
@@ -82,7 +116,7 @@ impl SafetyRulesSGX {
         }
     }
 
-    fn handle_storage_reqs(&self, mut stream: TcpStream) {
+    fn handle_storage_reqs(&mut self, mut stream: TcpStream) -> Vec<u8> {
         let mut buf = [0u8; 256];
         println!("waiting for storage reqs...local_addr = {:?}, peer_addr = {:?}",
             stream.local_addr(),
@@ -91,25 +125,31 @@ impl SafetyRulesSGX {
         loop {
             match stream.peek(&mut buf) {
                 Ok(len) => {
-                    // consume the bytes
                     let mut req = String::new();
                     let mut reader = BufReader::new(stream.try_clone().unwrap());
-                    let _reply = reader.read_line(&mut req).unwrap();
+                    // read the command, consume the bytes
+                    reader.read_line(&mut req).unwrap();
                     let req = req.as_str().trim();
                     if len == 0 {
                         continue;
                     }
                     if req == "done" {
                         println!("storage services finished. about to close.");
-                        break;
-                    } else {
+                        let payload = self.get_sgx_payload(&mut reader);
+                        return payload;
+                    } else if req.contains("get") {
                         // handle storage command (i.e. ocall)
-                        // TODO: separate get and set
-                        println!("requested storage services: {}", req);
-                        let reply = self.handle_storage_command(req);
+                        println!("requested get services: {}", req);
+                        let reply = self.handle_get(req);
                         let reply = self.prepare_storage_reply(reply);
                         println!("reply = {:#?}", reply);
-                        // reply.extend("\n".as_bytes());
+                        stream.write(&reply).unwrap();
+                    } else if req.contains("set") {
+                        println!("requested set services: {}", req);
+                        //let payload = self.get_sgx_payload(stream.try_clone().unwrap());
+                        let payload = self.get_sgx_payload(&mut reader);
+                        let reply = self.handle_set(req, &payload);
+                        let reply = self.prepare_storage_reply(reply);
                         stream.write(&reply).unwrap();
                     }
                 }
@@ -137,7 +177,7 @@ impl TSafetyRules for SafetyRulesSGX {
         let msg = prepare_msg!("req:init\n", proof);
         let mut stream = self.connect_sgx();
         stream.write(msg.as_ref()).unwrap();
-        //self.send(msg.as_ref());
+        self.handle_storage_reqs(stream.try_clone().unwrap());
         Ok(())
     }
 
@@ -153,6 +193,7 @@ impl TSafetyRules for SafetyRulesSGX {
         let msg = prepare_msg!("req:construct_and_sign_vote\n", maybe_signed_vote_proposal);
         let mut stream = self.connect_sgx();
         stream.write(msg.as_ref()).unwrap();
+        self.handle_storage_reqs(stream.try_clone().unwrap());
         Err(Error::NotInitialized("Unimplemented".into()))
     }
 
@@ -160,13 +201,16 @@ impl TSafetyRules for SafetyRulesSGX {
         let msg = prepare_msg!("req:sign_proposal\n", &block_data);
         let mut stream = self.connect_sgx();
         stream.write(msg.as_ref()).unwrap();
-        Err(Error::NotInitialized("Unimplemented".into()))
+        let result = self.handle_storage_reqs(stream.try_clone().unwrap());
+        let result: Result<Block, Error>  = lcs::from_bytes(&result).unwrap();
+        return result;
     }
 
     fn sign_timeout(&mut self, timeout: &Timeout) -> Result<Ed25519Signature, Error> {
         let msg = prepare_msg!("req:sign_timeout\n", timeout);
         let mut stream = self.connect_sgx();
         stream.write(msg.as_ref()).unwrap();
+        self.handle_storage_reqs(stream.try_clone().unwrap());
         Err(Error::NotInitialized("Unimplemented".into()))
     }
 }

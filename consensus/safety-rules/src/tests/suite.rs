@@ -50,7 +50,7 @@ pub type Callback = Box<
 >;
 
 pub fn run_test_suite(safety_rules: &Callback) {
-    test_sgx_message_passing(safety_rules);
+    //test_sgx_tsafety_rules(safety_rules);
     //test_bad_execution_output(safety_rules);
     //test_commit_rule_consecutive_rounds(safety_rules);
     //test_end_to_end(safety_rules);
@@ -60,7 +60,7 @@ pub fn run_test_suite(safety_rules: &Callback) {
     //test_voting(safety_rules);
     //test_voting_potential_commit_id(safety_rules);
     //test_voting_bad_epoch(safety_rules);
-    //test_sign_old_proposal(safety_rules);
+    test_sign_old_proposal(safety_rules);
     //test_sign_proposal_with_bad_signer(safety_rules);
     //test_sign_proposal_with_invalid_qc(safety_rules);
     //test_sign_proposal_with_early_preferred_round(safety_rules);
@@ -770,7 +770,7 @@ fn test_key_not_in_store(safety_rules: &Callback) {
     assert_eq!(state.in_validator_set(), false);
 }
 
-fn test_sgx_message_passing(safety_rules: &Callback) {
+fn test_sgx_tsafety_rules(safety_rules: &Callback) {
     let (mut safety_rules, signer, key) = safety_rules();
     let (proof, genesis_qc) = test_utils::make_genesis(&signer);
     let round = genesis_qc.certified_block().round();
@@ -779,7 +779,7 @@ fn test_sgx_message_passing(safety_rules: &Callback) {
     let a2 = make_proposal_with_parent(round + 2, &a1, None, &signer, key.as_ref());
 
     safety_rules.consensus_state().unwrap_err();
-    //safety_rules.initialize(&proof).unwrap();
+    safety_rules.initialize(&proof).unwrap();
     //safety_rules.sign_proposal(a1.block().block_data().clone()).unwrap_err();
     //safety_rules.construct_and_sign_vote(&a2).unwrap_err();
 
