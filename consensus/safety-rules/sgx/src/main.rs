@@ -24,10 +24,23 @@ mod t_safety_rules;
 
 pub const LSR_SGX_ADDRESS: &str = "localhost:8888";
 
+#[allow(dead_code)]
 fn respond(payload: &[u8], mut stream: TcpStream) {
     let len = payload.len() as i32;
     stream.write(&lcs::to_bytes(&len).unwrap()).unwrap();
     stream.write(payload).unwrap();
+}
+
+#[allow(dead_code)]
+fn test_mem_alloc() {
+    let mut mem = Vec::new();
+    let mut counter = 0;
+    loop {
+        mem.push(0u8);
+        counter += 1;
+        // This crashed at 65536, meaning 64KB is allowed. Crap
+        println!("Pushing {}", counter);
+    }
 }
 
 fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Result<()> {
