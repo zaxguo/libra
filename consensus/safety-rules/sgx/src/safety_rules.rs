@@ -30,6 +30,25 @@ use crate::{
     error::Error,
 };
 
+#[macro_use]
+macro_rules! sgx_print {
+    (@preamble) => {{
+        let file: Vec<&str> = file!().split("/").collect();
+        let file_name: &str = file.last().unwrap();
+        print!("LSR_SGX[{}:{}] ", file_name, line!());
+    }};
+
+    () => {
+        sgx_print!(@preamble);
+        println!();
+    };
+
+    ($first:expr $(, $rest:expr)* $(,)*) => {
+       sgx_print!(@preamble);
+       println!($first, $($rest),*);
+    };
+}
+
 pub struct SafetyRules {
     validator_signer: ValidatorSigner,
     storage_proxy: StorageProxy,
@@ -107,7 +126,7 @@ impl SafetyRules {
         let two_chain_round = quorum_cert.parent_block().round();
 
         if one_chain_round < preferred_round {
-            eprintln!(
+            sgx_print!(
                 "QC round does not match preferred round {} < {}",
                 one_chain_round, preferred_round
             );
@@ -160,7 +179,7 @@ impl SafetyRules {
             return Ok(());
         }
 
-        eprintln!(
+        sgx_print!(
             "Vote proposal is old {} <= {}",
             proposed_block.round(),
             last_voted_round
@@ -189,7 +208,7 @@ impl SafetyRules {
 impl TSafetyRules for SafetyRules {
 
     fn initialize(&mut self, proof: &EpochChangeProof) -> Result<(), Error> {
-        eprintln!("Initializing...");
+        sgx_print!("Initializing...");
 
         let waypoint = self.storage_proxy.waypoint();
         let last_li = proof
@@ -223,7 +242,7 @@ impl TSafetyRules for SafetyRules {
     }
 
     fn sign_proposal(&mut self, block_data: BlockData) -> Result<Block, Error> {
-        eprintln!("Incoming proposal to sign.");
+        sgx_print!("Incoming proposal to sign.");
 
         self.signer();
         self.verify_author(block_data.author())?;
@@ -239,7 +258,7 @@ impl TSafetyRules for SafetyRules {
     }
 
     fn sign_timeout(&mut self, timeout: &Timeout) -> Result<Ed25519Signature, Error> {
-        eprintln!("Incoming timeout message for round {}", timeout.round());
+        sgx_print!("Incoming timeout message for round {}", timeout.round());
 
         self.signer();
         self.verify_epoch(timeout.epoch())?;
@@ -267,12 +286,12 @@ impl TSafetyRules for SafetyRules {
         let validator_signer = self.signer();
         let signature = timeout.sign(&validator_signer);
 
-        eprintln!("Successfully signed timeout message.");
+        sgx_print!("Successfully signed timeout message.");
         Ok(signature)
     }
 
     fn consensus_state(&mut self) -> Result<ConsensusState, Error> {
-        eprintln!("Handling req:consensus_state!");
+        sgx_print!("Handling req:consensus_state!");
         let epoch = self.storage_proxy.epoch();
         let last_voted_round = self.storage_proxy.last_voted_round();
         let preferred_round = self.storage_proxy.preferred_round();

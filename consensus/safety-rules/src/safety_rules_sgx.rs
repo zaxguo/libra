@@ -20,7 +20,6 @@ use std::str;
 use serde::{Serialize, Deserialize};
 
 pub struct SafetyRulesSGX {
-    stream: TcpStream,
     persistent_storage: PersistentSafetyStorage,
 }
 
@@ -142,7 +141,7 @@ impl SafetyRulesSGX {
                         println!("requested get services: {}", req);
                         let reply = self.handle_get(req);
                         let reply = self.prepare_storage_reply(reply);
-                        println!("reply = {:#?}", reply);
+                        //println!("reply = {:#?}", reply);
                         stream.write(&reply).unwrap();
                     } else if req.contains("set") {
                         println!("requested set services: {}", req);
@@ -163,11 +162,13 @@ impl SafetyRulesSGX {
     }
 
     pub fn new(persistent_storage: PersistentSafetyStorage) -> Self {
-        safety_rules_sgx_runner::start_lsr_enclave();
-        let mut stream = TcpStream::connect(safety_rules_sgx_runner::LSR_SGX_ADDRESS).unwrap();
-        stream.write("hello...".as_bytes()).unwrap();
-        stream.shutdown(Shutdown::Write).unwrap();
-        Self { stream, persistent_storage }
+        if let Ok(mut stream) = TcpStream::connect(safety_rules_sgx_runner::LSR_SGX_ADDRESS) {
+           stream.write("hello...".as_bytes()).unwrap();
+           stream.shutdown(Shutdown::Write).unwrap();
+        } else {
+            safety_rules_sgx_runner::start_lsr_enclave();
+        }
+        Self { persistent_storage }
     }
 }
 
@@ -185,8 +186,9 @@ impl TSafetyRules for SafetyRulesSGX {
         let msg: Vec<u8> = "req:consensus_state\n".as_bytes().iter().cloned().collect();
         let mut stream = self.connect_sgx();
         stream.write(msg.as_ref()).unwrap();
-        self.handle_storage_reqs(stream.try_clone().unwrap());
-        Err(Error::NotInitialized("Unimplemented".into()))
+        let result = self.handle_storage_reqs(stream.try_clone().unwrap());
+        let result: Result<ConsensusState, Error> = lcs::from_bytes(&result).unwrap();
+        result
     }
 
     fn construct_and_sign_vote(&mut self, maybe_signed_vote_proposal: &MaybeSignedVoteProposal) -> Result<Vote, Error> {
@@ -203,7 +205,7 @@ impl TSafetyRules for SafetyRulesSGX {
         stream.write(msg.as_ref()).unwrap();
         let result = self.handle_storage_reqs(stream.try_clone().unwrap());
         let result: Result<Block, Error>  = lcs::from_bytes(&result).unwrap();
-        return result;
+        result
     }
 
     fn sign_timeout(&mut self, timeout: &Timeout) -> Result<Ed25519Signature, Error> {

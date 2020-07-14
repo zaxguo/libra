@@ -13,7 +13,10 @@ use crate::{
     safety_rules::SafetyRules,
     t_safety_rules::TSafetyRules,
 };
+
+#[macro_use]
 mod safety_rules;
+
 mod consensus_state;
 mod storage_proxy;
 mod error;
@@ -28,11 +31,11 @@ fn respond(payload: &[u8], mut stream: TcpStream) {
 }
 
 fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Result<()> {
-    eprintln!("LSR_CORE: received a new incoming req...");
+    sgx_print!("received a new incoming req...");
     let peer_addr = stream.peer_addr()?;
     let local_addr = stream.local_addr()?;
-    eprintln!(
-        "LSR_CORE: accept meesage from local {:?}, peer {:?}, stream = {:?}",
+    sgx_print!(
+        "accept meesage from local {:?}, peer {:?}, stream = {:?}",
         local_addr, peer_addr, stream
     );
     let mut reader = BufReader::new(&stream);
@@ -52,7 +55,7 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
         "req:consensus_state" => {
             let consensus_state = lsr.consensus_state();
             let response = lcs::to_bytes(&consensus_state).unwrap();
-            eprintln!("consensus_state:  {:#?}", consensus_state);
+            sgx_print!("consensus_state:  {:#?}", consensus_state);
             ret = response;
         }
         "req:construct_and_sign_vote" => {
@@ -64,8 +67,7 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
             let input: BlockData = lcs::from_bytes(buf).unwrap();
             let proposal = lsr.sign_proposal(input);
             let response = lcs::to_bytes(&proposal).unwrap();
-            eprintln!("sign_proposal:  {:#?}", proposal);
-            //eprintln!("reply:  {:#?}", response);
+            sgx_print!("sign_proposal:  {:#?}", proposal);
             ret = response;
         }
         "req:sign_timeout" => {
@@ -74,7 +76,7 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
             ret = vec![0u8;4];
         }
         _ => {
-            eprintln!("invalid req...{}", request);
+            sgx_print!("invalid req...{}", request);
             ret = vec![0u8;4];
         }
     }
@@ -84,7 +86,6 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
     payload.extend(ret);
     let mut ret: Vec<u8> = "done\n".as_bytes().to_vec();
     ret.extend(payload);
-    //eprintln!("LSR_CORE: returning {:#?}",ret);
     stream.write(&ret).unwrap();
     Ok(())
 }
@@ -92,19 +93,19 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
 fn main() -> Result<()> {
     let mut safety_rules = SafetyRules::new();
     let listener = TcpListener::bind(LSR_SGX_ADDRESS)?;
-    eprintln!("Ready to accept LSR requests...");
+    sgx_print!(" listening to {}...ready to accept LSR requests...", LSR_SGX_ADDRESS);
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
                 safety_rules.set_storage_proxy(stream.try_clone().unwrap());
-                let resp = process_safety_rules_reqs(&mut safety_rules, stream.try_clone().unwrap())?;
+                process_safety_rules_reqs(&mut safety_rules, stream.try_clone().unwrap())?;
             }
             Err(_) => {
-                eprintln!("unable to connect...");
+                sgx_print!("unable to connect...");
             }
         }
     }
-    eprintln!(
+    sgx_print!(
         "Wohoo! LSR_CORE about to terminate",
     );
     Ok(())

@@ -51,7 +51,7 @@ impl SafetyRulesSGXListener {
 
 impl SyncListener for SafetyRulesSGXListener {
     fn accept(&self, local_addr: Option<&mut String>, peer_addr: Option<&mut String>) -> IoResult<Box<dyn SyncStream>> {
-        let (mut stream, peer_address_tcp) = self.listener.accept()?;
+        let (stream, peer_address_tcp) = self.listener.accept()?;
         let local_addr_tcp = stream.local_addr()?;
         eprintln!(
             "runner:: bind -- local_address is {}, peer_address is {}",

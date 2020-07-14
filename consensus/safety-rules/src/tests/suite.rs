@@ -1,7 +1,6 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-#[allow(dead_code)]
 use crate::{test_utils, Error, SafetyRules, TSafetyRules};
 use consensus_types::{
     block::block_test_utils::random_payload, common::Round, quorum_cert::QuorumCert,
@@ -50,7 +49,7 @@ pub type Callback = Box<
 >;
 
 pub fn run_test_suite(safety_rules: &Callback) {
-    //test_sgx_tsafety_rules(safety_rules);
+    test_sgx_tsafety_rules(safety_rules);
     //test_bad_execution_output(safety_rules);
     //test_commit_rule_consecutive_rounds(safety_rules);
     //test_end_to_end(safety_rules);
@@ -61,8 +60,8 @@ pub fn run_test_suite(safety_rules: &Callback) {
     //test_voting_potential_commit_id(safety_rules);
     //test_voting_bad_epoch(safety_rules);
     test_sign_old_proposal(safety_rules);
-    //test_sign_proposal_with_bad_signer(safety_rules);
-    //test_sign_proposal_with_invalid_qc(safety_rules);
+    test_sign_proposal_with_bad_signer(safety_rules);
+    test_sign_proposal_with_invalid_qc(safety_rules);
     //test_sign_proposal_with_early_preferred_round(safety_rules);
     //test_uninitialized_signer(safety_rules);
     //test_reconcile_key(safety_rules);
@@ -778,9 +777,10 @@ fn test_sgx_tsafety_rules(safety_rules: &Callback) {
     let a1 = test_utils::make_proposal_with_qc(round + 1, genesis_qc, &signer, key.as_ref());
     let a2 = make_proposal_with_parent(round + 2, &a1, None, &signer, key.as_ref());
 
-    safety_rules.consensus_state().unwrap_err();
+    let consensus_state = safety_rules.consensus_state().unwrap();
+    println!("consensus_state = {}", consensus_state);
     safety_rules.initialize(&proof).unwrap();
-    //safety_rules.sign_proposal(a1.block().block_data().clone()).unwrap_err();
+    safety_rules.sign_proposal(a1.block().block_data().clone()).unwrap();
     //safety_rules.construct_and_sign_vote(&a2).unwrap_err();
 
     //let timeout = Timeout::new(epoch, a1.block().round());
