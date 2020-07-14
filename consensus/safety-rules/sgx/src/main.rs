@@ -1,5 +1,5 @@
 use std::io::{BufRead, BufReader, Write, ErrorKind, Result, Error};
-use std::net::{TcpStream, TcpListener};
+use std::net::{TcpStream, TcpListener, Shutdown};
 use libra_types::{validator_signer::ValidatorSigner, epoch_change::EpochChangeProof};
 use consensus_types::{
     block_data::BlockData,
@@ -31,7 +31,6 @@ fn respond(payload: &[u8], mut stream: TcpStream) {
 }
 
 fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Result<()> {
-    sgx_print!("received a new incoming req...");
     let peer_addr = stream.peer_addr()?;
     let local_addr = stream.local_addr()?;
     sgx_print!(
@@ -41,16 +40,15 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
     let mut reader = BufReader::new(&stream);
     let mut request = String::new();
     let _read_bytes = reader.read_line(&mut request).unwrap();
-    // fill the read of buf
-    //let buf = reader.fill_buf().unwrap();
     let buf = reader.buffer();
     let ret;
     match request.as_str().trim() {
         "req:init" => {
             // fill the read of buf
             let input: EpochChangeProof = lcs::from_bytes(buf).unwrap();
-            lsr.initialize(&input).unwrap();
-            ret = vec![0u8;4];
+            let result = lsr.initialize(&input);
+            let response = lcs::to_bytes(&result).unwrap();
+            ret = response;
         }
         "req:consensus_state" => {
             let consensus_state = lsr.consensus_state();
@@ -59,9 +57,13 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
             ret = response;
         }
         "req:construct_and_sign_vote" => {
+            sgx_print!("buf size = {}", buf.len());
             let input: MaybeSignedVoteProposal = lcs::from_bytes(buf).unwrap();
-            eprintln!("{} -- {}", request, input.vote_proposal);
-            ret = vec![0u8;4];
+            sgx_print!();
+            let vote = lsr.construct_and_sign_vote(&input);
+            let response = lcs::to_bytes(&vote).unwrap();
+            sgx_print!("construct_and_sign_vote:  {:#?}", vote);
+            ret = response;
         }
         "req:sign_proposal" => {
             let input: BlockData = lcs::from_bytes(buf).unwrap();
@@ -72,8 +74,10 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
         }
         "req:sign_timeout" => {
             let input: Timeout = lcs::from_bytes(buf).unwrap();
-            eprintln!("{} -- {:#?}", request, input);
-            ret = vec![0u8;4];
+            let timeout = lsr.sign_timeout(&input);
+            let response = lcs::to_bytes(&timeout).unwrap();
+            sgx_print!("sign_timeout:  {:#?}", timeout);
+            ret = response;
         }
         _ => {
             sgx_print!("invalid req...{}", request);
@@ -99,6 +103,7 @@ fn main() -> Result<()> {
             Ok(stream) => {
                 safety_rules.set_storage_proxy(stream.try_clone().unwrap());
                 process_safety_rules_reqs(&mut safety_rules, stream.try_clone().unwrap())?;
+                stream.shutdown(Shutdown::Both).expect("Shutdown failed..");
             }
             Err(_) => {
                 sgx_print!("unable to connect...");

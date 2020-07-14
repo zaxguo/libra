@@ -29,7 +29,6 @@ impl StorageProxy {
         let cmd = prefix + key;
         let mut stream = self.internal.as_ref().unwrap();
         stream.write(cmd.as_bytes()).unwrap();
-        println!("cmd: {}", cmd);
 
         // read reply, message format:
         // first 4 bytes: payload length (len)
@@ -43,19 +42,18 @@ impl StorageProxy {
     }
 
     fn set(&self, key: &str, payload: &[u8]) {
-        // send out set command
         let prefix: String = "set:".to_owned();
         let cmd = prefix + key;
         let mut stream = self.internal.as_ref().unwrap();
-        stream.write(cmd.as_bytes()).unwrap();
 
-        // send out payload, message format is the same --
-        // first 4 bytes indicate the size of the payload,
-        // followed by payload.
+        // send out payload in one-shot. Message format is the same --
+        // Stringified command (ending w/ \n) + len (i32) + payload
+        let mut cmd = cmd.as_bytes().to_vec();
         let len = payload.len() as i32;
         let len = lcs::to_bytes(&len).unwrap();
-        stream.write(&len).unwrap();
-        stream.write(payload).unwrap();
+        cmd.extend(len);
+        cmd.extend(payload);
+        stream.write(&cmd).unwrap();
 
         let mut reply = [0u8; 4];
         stream.read_exact(&mut reply).unwrap();
@@ -73,6 +71,12 @@ impl StorageProxy {
     pub fn last_voted_round(&self) -> Round {
         let payload = self.get("last_voted_round\n");
         let ret: Round = lcs::from_bytes(&payload).unwrap();
+        ret
+    }
+
+    pub fn last_vote(&self) -> Option<Vote> {
+        let payload = self.get("last_vote\n");
+        let ret: Option<Vote> = lcs::from_bytes(&payload).unwrap();
         ret
     }
 
@@ -107,12 +111,12 @@ impl StorageProxy {
 
     pub fn set_preferred_round(&self, preferred_round: Round) -> Result<()> {
         let payload = lcs::to_bytes(&preferred_round).unwrap();
-        self.set("last_voted_round\n", &payload);
+        self.set("preferred_round\n", &payload);
         Ok(())
     }
 
     pub fn set_last_vote(&self, vote: Option<Vote>) -> Result<()> {
-        let payload = lcs::to_bytes(&vote.unwrap()).unwrap();
+        let payload = lcs::to_bytes(&vote).unwrap();
         self.set("last_vote\n", &payload);
         Ok(())
     }

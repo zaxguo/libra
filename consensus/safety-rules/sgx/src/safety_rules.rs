@@ -52,6 +52,7 @@ macro_rules! sgx_print {
 pub struct SafetyRules {
     validator_signer: ValidatorSigner,
     storage_proxy: StorageProxy,
+    execution_public_key: Option<Ed25519PublicKey>,
     epoch_state: Option<EpochState>,
 }
 
@@ -61,6 +62,7 @@ impl SafetyRules {
         Self {
             validator_signer: ValidatorSigner::from_int(0),
             storage_proxy: StorageProxy::new(None),
+            execution_public_key: None,
             epoch_state: None,
         }
     }
@@ -237,8 +239,58 @@ impl TSafetyRules for SafetyRules {
         Ok(())
     }
 
-    fn construct_and_sign_vote(&mut self, vote_proposal: &MaybeSignedVoteProposal) -> Result<Vote, Error> {
-        return Err(Error::NotInitialized("tsafety_rules".into()));
+    fn construct_and_sign_vote(
+        &mut self,
+        maybe_signed_vote_proposal: &MaybeSignedVoteProposal)
+        -> Result<Vote, Error> {
+        sgx_print!("Incoming vote to sign.");
+        // Exit early if we cannot sign
+        self.signer();
+
+        let (vote_proposal, execution_signature) = (
+            &maybe_signed_vote_proposal.vote_proposal,
+            maybe_signed_vote_proposal.signature.as_ref(),
+        );
+
+        if let Some(public_key) = self.execution_public_key.as_ref() {
+            execution_signature
+                .ok_or_else(|| Error::VoteProposalSignatureNotFound)?
+                .verify(vote_proposal, public_key)?
+        }
+
+        let proposed_block = vote_proposal.block();
+        self.verify_epoch(proposed_block.epoch())?;
+        self.verify_qc(proposed_block.quorum_cert())?;
+        proposed_block.validate_signature(&self.epoch_state()?.verifier)?;
+
+        self.verify_and_update_preferred_round(proposed_block.quorum_cert())?;
+        // if already voted on this round, send back the previous vote.
+        let last_vote = self.storage_proxy.last_vote();
+        if let Some(vote) = last_vote {
+            if vote.vote_data().proposed().round() == proposed_block.round() {
+                self.storage_proxy
+                    .set_last_voted_round(proposed_block.round())?;
+                return Ok(vote);
+            }
+        }
+        self.verify_last_vote_round(proposed_block.block_data())?;
+
+        let vote_data = self.extension_check(vote_proposal)?;
+        self.storage_proxy
+            .set_last_voted_round(proposed_block.round())?;
+
+        let validator_signer = self.signer();
+        let vote = Vote::new(
+            vote_data,
+            validator_signer.author(),
+            self.construct_ledger_info(proposed_block),
+            validator_signer,
+        );
+        self.storage_proxy.set_last_vote(Some(vote.clone()))?;
+        self.storage_proxy
+            .set_last_voted_round(proposed_block.round())?;
+
+        Ok(vote)
     }
 
     fn sign_proposal(&mut self, block_data: BlockData) -> Result<Block, Error> {

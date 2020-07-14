@@ -7,7 +7,7 @@ use crate::{ConsensusState, Error, safety_rules_sgx_runner, t_safety_rules::TSaf
 };
 use consensus_types::{
         block::Block, block_data::BlockData, timeout::Timeout, vote::Vote,
-            vote_proposal::MaybeSignedVoteProposal,
+        vote_proposal::MaybeSignedVoteProposal, common::Round,
 };
 use libra_crypto::ed25519::Ed25519Signature;
 use libra_types::{
@@ -75,7 +75,28 @@ impl SafetyRulesSGX {
                 self.persistent_storage.set_waypoint(&waypoint).unwrap();
                 lcs::to_bytes(&waypoint).unwrap()
             }
+            "set:last_voted_round" => {
+                let last_voted_round: Round = lcs::from_bytes(payload).unwrap();
+                self.persistent_storage.set_last_voted_round(last_voted_round).unwrap();
+                lcs::to_bytes(&last_voted_round).unwrap()
+            }
+            "set:preferred_round" => {
+                let preferred_round: Round = lcs::from_bytes(payload).unwrap();
+                self.persistent_storage.set_preferred_round(preferred_round).unwrap();
+                lcs::to_bytes(&preferred_round).unwrap()
+            }
+            "set:last_vote" => {
+                let last_vote: Option<Vote> = lcs::from_bytes(payload).unwrap();
+                self.persistent_storage.set_last_vote(last_vote.clone()).unwrap();
+                lcs::to_bytes(&last_vote).unwrap()
+            }
+            "set:epoch" => {
+                let epoch: u64 = lcs::from_bytes(payload).unwrap();
+                self.persistent_storage.set_epoch(epoch.clone()).unwrap();
+                lcs::to_bytes(&epoch).unwrap()
+            }
             _ => {
+                println!("LSR: unrecognized set command! [{}]", command);
                 Vec::new()
             }
         }
@@ -85,28 +106,27 @@ impl SafetyRulesSGX {
         match command {
             "get:epoch" => {
                 let epoch = self.persistent_storage.epoch().unwrap();
-                println!("epoch = {}", epoch);
                 lcs::to_bytes(&epoch).unwrap()
             }
             "get:preferred_round" => {
                 let round = self.persistent_storage.preferred_round().unwrap();
-                println!("preferred round = {}", round);
                 lcs::to_bytes(&round).unwrap()
             }
             "get:last_voted_round" => {
                 let round = self.persistent_storage.last_voted_round().unwrap();
-                println!("last round = {}", round);
                 lcs::to_bytes(&round).unwrap()
             }
             "get:waypoint" => {
                let waypoint = self.persistent_storage.waypoint().unwrap();
-               println!("waypoint = {}", waypoint);
                lcs::to_bytes(&waypoint).unwrap()
             }
             "get:author" => {
                 let author = self.persistent_storage.author().unwrap();
-                println!("author = {}", author);
                 lcs::to_bytes(&author).unwrap()
+            }
+            "get:last_vote" => {
+                let last_vote = self.persistent_storage.last_vote().unwrap();
+                lcs::to_bytes(&last_vote).unwrap()
             }
             _ => {
                println!("I am not supposed to be here :(");
@@ -135,6 +155,7 @@ impl SafetyRulesSGX {
                     if req == "done" {
                         println!("storage services finished. about to close.");
                         let payload = self.get_sgx_payload(&mut reader);
+                        stream.shutdown(Shutdown::Both).expect("cannot shutdown stream with SGX...");
                         return payload;
                     } else if req.contains("get") {
                         // handle storage command (i.e. ocall)
@@ -145,7 +166,6 @@ impl SafetyRulesSGX {
                         stream.write(&reply).unwrap();
                     } else if req.contains("set") {
                         println!("requested set services: {}", req);
-                        //let payload = self.get_sgx_payload(stream.try_clone().unwrap());
                         let payload = self.get_sgx_payload(&mut reader);
                         let reply = self.handle_set(req, &payload);
                         let reply = self.prepare_storage_reply(reply);
@@ -165,6 +185,8 @@ impl SafetyRulesSGX {
         if let Ok(mut stream) = TcpStream::connect(safety_rules_sgx_runner::LSR_SGX_ADDRESS) {
            stream.write("hello...".as_bytes()).unwrap();
            stream.shutdown(Shutdown::Write).unwrap();
+           println!("The address {} has already been used! LSR-SGX is supposed to be running.",
+               safety_rules_sgx_runner::LSR_SGX_ADDRESS);
         } else {
             safety_rules_sgx_runner::start_lsr_enclave();
         }
@@ -178,8 +200,9 @@ impl TSafetyRules for SafetyRulesSGX {
         let msg = prepare_msg!("req:init\n", proof);
         let mut stream = self.connect_sgx();
         stream.write(msg.as_ref()).unwrap();
-        self.handle_storage_reqs(stream.try_clone().unwrap());
-        Ok(())
+        let result = self.handle_storage_reqs(stream.try_clone().unwrap());
+        let result: Result<(), Error> = lcs::from_bytes(&result).unwrap();
+        result
     }
 
     fn consensus_state(&mut self) -> Result<ConsensusState, Error> {
@@ -194,9 +217,11 @@ impl TSafetyRules for SafetyRulesSGX {
     fn construct_and_sign_vote(&mut self, maybe_signed_vote_proposal: &MaybeSignedVoteProposal) -> Result<Vote, Error> {
         let msg = prepare_msg!("req:construct_and_sign_vote\n", maybe_signed_vote_proposal);
         let mut stream = self.connect_sgx();
+        println!("----- sending {} bytes...", msg.len());
         stream.write(msg.as_ref()).unwrap();
-        self.handle_storage_reqs(stream.try_clone().unwrap());
-        Err(Error::NotInitialized("Unimplemented".into()))
+        let result = self.handle_storage_reqs(stream.try_clone().unwrap());
+        let result: Result<Vote, Error> = lcs::from_bytes(&result).unwrap();
+        result
     }
 
     fn sign_proposal(&mut self, block_data: BlockData) -> Result<Block, Error> {
@@ -212,8 +237,9 @@ impl TSafetyRules for SafetyRulesSGX {
         let msg = prepare_msg!("req:sign_timeout\n", timeout);
         let mut stream = self.connect_sgx();
         stream.write(msg.as_ref()).unwrap();
-        self.handle_storage_reqs(stream.try_clone().unwrap());
-        Err(Error::NotInitialized("Unimplemented".into()))
+        let result = self.handle_storage_reqs(stream.try_clone().unwrap());
+        let result: Result<Ed25519Signature, Error> = lcs::from_bytes(&result).unwrap();
+        result
     }
 }
 

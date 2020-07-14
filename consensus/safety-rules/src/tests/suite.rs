@@ -17,6 +17,7 @@ use libra_types::{
     validator_verifier::ValidatorVerifier,
 };
 use std::thread;
+use std::mem;
 
 type Proof = test_utils::Proof;
 
@@ -50,19 +51,20 @@ pub type Callback = Box<
 
 pub fn run_test_suite(safety_rules: &Callback) {
     test_sgx_tsafety_rules(safety_rules);
-    //test_bad_execution_output(safety_rules);
-    //test_commit_rule_consecutive_rounds(safety_rules);
+    test_bad_execution_output(safety_rules);
+    test_commit_rule_consecutive_rounds(safety_rules);
+    // end-to-end is not working due to the payload cannot fit inside SGX mem!!
     //test_end_to_end(safety_rules);
-    //test_initialize(safety_rules);
-    //test_preferred_block_rule(safety_rules);
-    //test_sign_timeout(safety_rules);
-    //test_voting(safety_rules);
-    //test_voting_potential_commit_id(safety_rules);
-    //test_voting_bad_epoch(safety_rules);
+    test_initialize(safety_rules);
+    test_preferred_block_rule(safety_rules);
+    test_sign_timeout(safety_rules);
+    test_voting(safety_rules);
+    test_voting_potential_commit_id(safety_rules);
+    test_voting_bad_epoch(safety_rules);
     test_sign_old_proposal(safety_rules);
     test_sign_proposal_with_bad_signer(safety_rules);
     test_sign_proposal_with_invalid_qc(safety_rules);
-    //test_sign_proposal_with_early_preferred_round(safety_rules);
+    test_sign_proposal_with_early_preferred_round(safety_rules);
     //test_uninitialized_signer(safety_rules);
     //test_reconcile_key(safety_rules);
     //test_validator_not_in_set(safety_rules);
@@ -781,10 +783,11 @@ fn test_sgx_tsafety_rules(safety_rules: &Callback) {
     println!("consensus_state = {}", consensus_state);
     safety_rules.initialize(&proof).unwrap();
     safety_rules.sign_proposal(a1.block().block_data().clone()).unwrap();
-    //safety_rules.construct_and_sign_vote(&a2).unwrap_err();
+    let vote = safety_rules.construct_and_sign_vote(&a2).unwrap();
+    println!("signed vote = {}", vote);
 
-    //let timeout = Timeout::new(epoch, a1.block().round());
-    //safety_rules.sign_timeout(&timeout).unwrap_err();
+    let timeout = Timeout::new(epoch, a1.block().round());
+    safety_rules.sign_timeout(&timeout).unwrap_err();
     // allow SGX to finish printing
     thread::sleep(std::time::Duration::from_secs(10));
 }
