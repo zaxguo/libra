@@ -14,3 +14,7 @@ libra-crypto = { path = "../../../crypto/crypto", version = "0.1.0" }
 consensus-types = { path = "../../consensus-types", version = "0.1.0" }
 thiserror = "1.0.20"
 anyhow = "1.0.31"
+
+[package.metadata.fortanix-sgx]
+stack-size=0x20000
+heap-size=0x4000000

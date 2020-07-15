@@ -5,6 +5,7 @@ use consensus_types::{
     common::{Round, Author},
     vote::Vote,
 };
+use libra_crypto::ed25519::{Ed25519PublicKey, Ed25519PrivateKey};
 use libra_types::{
     waypoint::Waypoint,
 };
@@ -125,5 +126,33 @@ impl StorageProxy {
         let payload = lcs::to_bytes(&epoch).unwrap();
         self.set("epoch\n", &payload);
         Ok(())
+    }
+
+    // different than previous get since it has payload, which is the pubkey version
+    // we will use set command for convenience
+    pub fn consensus_key_for_version(
+        &self,
+        version: Ed25519PublicKey,
+        ) -> Option<Ed25519PrivateKey> {
+        let cmd = "set:consensus_key_for_version\n";
+        let mut cmd = cmd.as_bytes().to_vec();
+        let payload = lcs::to_bytes(&version).unwrap();
+        let len = payload.len() as i32;
+        cmd.extend(lcs::to_bytes(&len).unwrap());
+        cmd.extend(payload);
+        let mut stream = self.internal.as_ref().unwrap();
+        stream.write(&cmd).unwrap();
+
+        // read reply, message format:
+        // first 4 bytes: payload length (len)
+        // following (len) bytes: payload
+        let mut buf = [0u8; 4];
+        stream.read_exact(&mut buf).unwrap();
+        let len: i32 = lcs::from_bytes(&buf).unwrap();
+        let mut payload = vec![0u8; len as usize];
+        stream.read_exact(&mut payload).unwrap();
+        // Result cannot be deserialized, use Option as a workaround
+        let payload: Option<Ed25519PrivateKey> = lcs::from_bytes(&payload).unwrap();
+        payload
     }
 }

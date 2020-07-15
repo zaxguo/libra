@@ -9,7 +9,7 @@ use consensus_types::{
         block::Block, block_data::BlockData, timeout::Timeout, vote::Vote,
         vote_proposal::MaybeSignedVoteProposal, common::Round,
 };
-use libra_crypto::ed25519::Ed25519Signature;
+use libra_crypto::ed25519::{Ed25519Signature, Ed25519PublicKey};
 use libra_types::{
     epoch_change::EpochChangeProof,
     waypoint::Waypoint
@@ -95,6 +95,12 @@ impl SafetyRulesSGX {
                 self.persistent_storage.set_epoch(epoch.clone()).unwrap();
                 lcs::to_bytes(&epoch).unwrap()
             }
+            "set:consensus_key_for_version" => {
+                let version: Ed25519PublicKey = lcs::from_bytes(&payload).unwrap();
+                println!("receiving pub key = {}", version);
+                let privkey = self.persistent_storage.consensus_key_for_version(version).ok();
+                lcs::to_bytes(&privkey).unwrap()
+            }
             _ => {
                 println!("LSR: unrecognized set command! [{}]", command);
                 Vec::new()
@@ -128,7 +134,7 @@ impl SafetyRulesSGX {
                 let last_vote = self.persistent_storage.last_vote().unwrap();
                 lcs::to_bytes(&last_vote).unwrap()
             }
-            _ => {
+           _ => {
                println!("I am not supposed to be here :(");
                Vec::new()
             }
@@ -182,8 +188,10 @@ impl SafetyRulesSGX {
     }
 
     pub fn new(persistent_storage: PersistentSafetyStorage) -> Self {
+        // SGX is already running but we are trying to instantiate a new safety rule instance
+        // Tell SGX to reset its internal states
         if let Ok(mut stream) = TcpStream::connect(safety_rules_sgx_runner::LSR_SGX_ADDRESS) {
-           stream.write("hello...".as_bytes()).unwrap();
+           stream.write("req:reset\n".as_bytes()).unwrap();
            stream.shutdown(Shutdown::Write).unwrap();
            println!("The address {} has already been used! LSR-SGX is supposed to be running.",
                safety_rules_sgx_runner::LSR_SGX_ADDRESS);

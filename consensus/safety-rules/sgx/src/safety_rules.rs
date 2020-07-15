@@ -50,8 +50,8 @@ macro_rules! sgx_print {
 }
 
 pub struct SafetyRules {
-    validator_signer: ValidatorSigner,
     storage_proxy: StorageProxy,
+    validator_signer: Option<ValidatorSigner>,
     execution_public_key: Option<Ed25519PublicKey>,
     epoch_state: Option<EpochState>,
 }
@@ -60,15 +60,24 @@ impl SafetyRules {
 
     pub fn new() -> Self {
         Self {
-            validator_signer: ValidatorSigner::from_int(0),
             storage_proxy: StorageProxy::new(None),
+            validator_signer: None,
             execution_public_key: None,
             epoch_state: None,
         }
     }
 
-    fn signer(&self) -> &ValidatorSigner {
-        &self.validator_signer
+    pub fn reset(&mut self) {
+        sgx_print!("resetting SGX states!");
+        self.validator_signer = None;
+        self.execution_public_key = None;
+        self.epoch_state = None;
+    }
+
+    fn signer(&self) -> Result<&ValidatorSigner, Error> {
+        self.validator_signer
+            .as_ref()
+            .ok_or_else(|| Error::NotInitialized("validator_signer".into()))
     }
 
     fn epoch_state(&self) -> Result<&EpochState, Error>  {
@@ -153,7 +162,7 @@ impl SafetyRules {
 
     /// This verifies whether the author of one proposal is the validator signer
     fn verify_author(&self, author: Option<Author>) -> Result<(), Error> {
-        let validator_signer_author = &self.signer().author();
+        let validator_signer_author = &self.signer()?.author();
         let author = author
             .ok_or_else(|| Error::InvalidProposal("No author found in the proposal".into()))?;
         if validator_signer_author != &author {
@@ -224,8 +233,28 @@ impl TSafetyRules for SafetyRules {
 
         let author = self.storage_proxy.author();
         if let Some(expected_key) = epoch_state.verifier.get_public_key(&author) {
-            // TODO:reconcile key
+            let curr_key = self.signer().ok().map(|s| s.public_key());
+            if curr_key != Some(expected_key.clone()) {
+                sgx_print!("expected key = {}", expected_key);
+                let consensus_key = self
+                                    .storage_proxy
+                                    .consensus_key_for_version(expected_key.clone())
+                                    .ok_or_else(|| {
+                                        sgx_print!("Validator key not found!");
+                                        self.validator_signer = None;
+                                        Error::InternalError("Validator key not found".into())
+                                    })?;
+                    sgx_print!("Reconciled pub key for signer {} [{:#?} -> {}]",
+                    author, curr_key, expected_key);
+                    self.validator_signer = Some(ValidatorSigner::new(author, consensus_key));
+            } else {
+                sgx_print!("Validator key matches the key in validator set.");
+            }
+        } else {
+            sgx_print!("The validator is not in set!");
+            self.validator_signer = None;
         }
+
         let current_epoch = self.storage_proxy.epoch();
 
         if current_epoch < epoch_state.epoch {
@@ -245,7 +274,7 @@ impl TSafetyRules for SafetyRules {
         -> Result<Vote, Error> {
         sgx_print!("Incoming vote to sign.");
         // Exit early if we cannot sign
-        self.signer();
+        self.signer()?;
 
         let (vote_proposal, execution_signature) = (
             &maybe_signed_vote_proposal.vote_proposal,
@@ -279,7 +308,7 @@ impl TSafetyRules for SafetyRules {
         self.storage_proxy
             .set_last_voted_round(proposed_block.round())?;
 
-        let validator_signer = self.signer();
+        let validator_signer = self.signer()?;
         let vote = Vote::new(
             vote_data,
             validator_signer.author(),
@@ -296,7 +325,7 @@ impl TSafetyRules for SafetyRules {
     fn sign_proposal(&mut self, block_data: BlockData) -> Result<Block, Error> {
         sgx_print!("Incoming proposal to sign.");
 
-        self.signer();
+        self.signer()?;
         self.verify_author(block_data.author())?;
         self.verify_epoch(block_data.epoch())?;
         self.verify_last_vote_round(&block_data)?;
@@ -305,14 +334,14 @@ impl TSafetyRules for SafetyRules {
 
         Ok(Block::new_proposal_from_block_data(
                 block_data,
-                self.signer(),
+                self.signer()?,
         ))
     }
 
     fn sign_timeout(&mut self, timeout: &Timeout) -> Result<Ed25519Signature, Error> {
         sgx_print!("Incoming timeout message for round {}", timeout.round());
 
-        self.signer();
+        self.signer()?;
         self.verify_epoch(timeout.epoch())?;
 
         let preferred_round = self.storage_proxy.preferred_round();
@@ -335,7 +364,7 @@ impl TSafetyRules for SafetyRules {
                 .set_last_voted_round(timeout.round())?;
         }
 
-        let validator_signer = self.signer();
+        let validator_signer = self.signer()?;
         let signature = timeout.sign(&validator_signer);
 
         sgx_print!("Successfully signed timeout message.");
@@ -353,7 +382,7 @@ impl TSafetyRules for SafetyRules {
                 last_voted_round,
                 preferred_round,
                 waypoint,
-                true
+                self.signer().is_ok(),
             )
          )
     }

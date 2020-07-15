@@ -1,11 +1,9 @@
-use std::io::{BufRead, BufReader, Write, ErrorKind, Result, Error};
+use std::io::{BufRead, BufReader, Write, Result};
 use std::net::{TcpStream, TcpListener, Shutdown};
-use libra_types::{validator_signer::ValidatorSigner, epoch_change::EpochChangeProof};
+use libra_types::{epoch_change::EpochChangeProof};
 use consensus_types::{
     block_data::BlockData,
-    vote::Vote,
-    vote_data::VoteData,
-    vote_proposal::{MaybeSignedVoteProposal, VoteProposal},
+    vote_proposal::{MaybeSignedVoteProposal},
     timeout::Timeout,
 };
 
@@ -34,12 +32,10 @@ fn respond(payload: &[u8], mut stream: TcpStream) {
 #[allow(dead_code)]
 fn test_mem_alloc() {
     let mut mem = Vec::new();
-    let mut counter = 0;
     loop {
         mem.push(0u8);
-        counter += 1;
         // This crashed at 65536, meaning 64KB is allowed. Crap
-        println!("Pushing {}", counter);
+        println!("Pushing {}", mem.len());
     }
 }
 
@@ -72,7 +68,6 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
         "req:construct_and_sign_vote" => {
             sgx_print!("buf size = {}", buf.len());
             let input: MaybeSignedVoteProposal = lcs::from_bytes(buf).unwrap();
-            sgx_print!();
             let vote = lsr.construct_and_sign_vote(&input);
             let response = lcs::to_bytes(&vote).unwrap();
             sgx_print!("construct_and_sign_vote:  {:#?}", vote);
@@ -92,6 +87,10 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
             sgx_print!("sign_timeout:  {:#?}", timeout);
             ret = response;
         }
+        "req:reset" => {
+            lsr.reset();
+            ret = vec![0u8;4]
+        }
         _ => {
             sgx_print!("invalid req...{}", request);
             ret = vec![0u8;4];
@@ -108,6 +107,7 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
 }
 
 fn main() -> Result<()> {
+    //test_mem_alloc();
     let mut safety_rules = SafetyRules::new();
     let listener = TcpListener::bind(LSR_SGX_ADDRESS)?;
     sgx_print!(" listening to {}...ready to accept LSR requests...", LSR_SGX_ADDRESS);

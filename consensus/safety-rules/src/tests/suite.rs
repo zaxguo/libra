@@ -65,10 +65,10 @@ pub fn run_test_suite(safety_rules: &Callback) {
     test_sign_proposal_with_bad_signer(safety_rules);
     test_sign_proposal_with_invalid_qc(safety_rules);
     test_sign_proposal_with_early_preferred_round(safety_rules);
-    //test_uninitialized_signer(safety_rules);
-    //test_reconcile_key(safety_rules);
-    //test_validator_not_in_set(safety_rules);
-    //test_key_not_in_store(safety_rules);
+    test_uninitialized_signer(safety_rules);
+    test_reconcile_key(safety_rules);
+    test_validator_not_in_set(safety_rules);
+    test_key_not_in_store(safety_rules);
 }
 
 fn test_bad_execution_output(safety_rules: &Callback) {
