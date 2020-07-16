@@ -18,9 +18,14 @@ use std::io::{self, Write, Read, BufReader, BufRead};
 use std::net::{TcpStream, Shutdown};
 use std::str;
 use serde::{Serialize, Deserialize};
+use aes_gcm::{
+    Aes256Gcm,
+    aead::{Aead, NewAead, generic_array::GenericArray},
+};
 
 pub struct SafetyRulesSGX {
     persistent_storage: PersistentSafetyStorage,
+    cipher: Aes256Gcm,
 }
 
 // TODO: move this to a separate package for SGX to use as well
@@ -47,6 +52,24 @@ impl SafetyRulesSGX {
     fn connect_sgx(&self) -> TcpStream {
         TcpStream::connect(safety_rules_sgx_runner::LSR_SGX_ADDRESS).unwrap()
     }
+
+    // This is the shared secret we assumed between SGX and storage, which is
+    // needed for intializing the storage with ENCRYPTED data in the first place
+    fn generate_cipher_for_testing() -> Aes256Gcm {
+        let key = GenericArray::from_slice(&[0u8; 32]);
+        Aes256Gcm::new(key)
+    }
+
+    #[allow(dead_code)]
+    fn test_cipher(&self, payload: &[u8]) {
+        let nonce = GenericArray::from_slice(&[0u8; 12]);
+        let ciphertext = self.cipher.encrypt(nonce, payload).unwrap();
+        let plaintext = self.cipher.decrypt(nonce, ciphertext.as_ref()).unwrap();
+        println!("orig: len = {}, data = {:?}", payload.len(), payload);
+        println!("cipher text: len = {}, data = {:?}", ciphertext.len(), ciphertext);
+        println!("plain text: len = {}, data = {:?}", plaintext.len(), plaintext);
+    }
+
 
     fn prepare_storage_reply(&self, reply: Vec<u8>) -> Vec<u8> {
         let len: i32 = reply.len() as i32;
@@ -76,9 +99,10 @@ impl SafetyRulesSGX {
                 lcs::to_bytes(&waypoint).unwrap()
             }
             "set:last_voted_round" => {
-                let last_voted_round: Round = lcs::from_bytes(payload).unwrap();
-                self.persistent_storage.set_last_voted_round(last_voted_round).unwrap();
-                lcs::to_bytes(&last_voted_round).unwrap()
+                //let last_voted_round: Round = lcs::from_bytes(payload).unwrap();
+                //self.persistent_storage.set_last_voted_round(last_voted_round).unwrap();
+                self.persistent_storage.set_last_voted_round_bytes(payload.to_vec()).unwrap();
+                payload.to_vec()
             }
             "set:preferred_round" => {
                 let preferred_round: Round = lcs::from_bytes(payload).unwrap();
@@ -86,9 +110,10 @@ impl SafetyRulesSGX {
                 lcs::to_bytes(&preferred_round).unwrap()
             }
             "set:last_vote" => {
-                let last_vote: Option<Vote> = lcs::from_bytes(payload).unwrap();
-                self.persistent_storage.set_last_vote(last_vote.clone()).unwrap();
-                lcs::to_bytes(&last_vote).unwrap()
+                //let last_vote: Option<Vote> = lcs::from_bytes(payload).unwrap();
+                //self.persistent_storage.set_last_vote(last_vote.clone()).unwrap();
+                self.persistent_storage.set_last_vote_bytes(payload.to_vec()).unwrap();
+                payload.to_vec()
             }
             "set:epoch" => {
                 let epoch: u64 = lcs::from_bytes(payload).unwrap();
@@ -111,28 +136,28 @@ impl SafetyRulesSGX {
     fn handle_get(&self, command: &str) -> Vec<u8> {
         match command {
             "get:epoch" => {
-                let epoch = self.persistent_storage.epoch().unwrap();
-                lcs::to_bytes(&epoch).unwrap()
+                self.persistent_storage.epoch_bytes().unwrap()
             }
             "get:preferred_round" => {
-                let round = self.persistent_storage.preferred_round().unwrap();
-                lcs::to_bytes(&round).unwrap()
+                self.persistent_storage.preferred_round_bytes().unwrap()
             }
             "get:last_voted_round" => {
-                let round = self.persistent_storage.last_voted_round().unwrap();
-                lcs::to_bytes(&round).unwrap()
+                self.persistent_storage.last_voted_round_bytes().unwrap()
             }
             "get:waypoint" => {
-               let waypoint = self.persistent_storage.waypoint().unwrap();
-               lcs::to_bytes(&waypoint).unwrap()
+               self.persistent_storage.waypoint_bytes().unwrap()
             }
             "get:author" => {
-                let author = self.persistent_storage.author().unwrap();
-                lcs::to_bytes(&author).unwrap()
+               self.persistent_storage.author_bytes().unwrap()
             }
             "get:last_vote" => {
-                let last_vote = self.persistent_storage.last_vote().unwrap();
-                lcs::to_bytes(&last_vote).unwrap()
+               self.persistent_storage.last_vote_bytes().unwrap()
+            }
+            "get:curr_consensus_key" => {
+                self.persistent_storage.curr_consensus_key_bytes().unwrap()
+            }
+            "get:prev_consensus_key" => {
+                self.persistent_storage.prev_consensus_key_bytes().unwrap()
             }
            _ => {
                println!("I am not supposed to be here :(");
@@ -168,7 +193,7 @@ impl SafetyRulesSGX {
                         println!("requested get services: {}", req);
                         let reply = self.handle_get(req);
                         let reply = self.prepare_storage_reply(reply);
-                        //println!("reply = {:#?}", reply);
+                        println!("reply = {:?}", reply);
                         stream.write(&reply).unwrap();
                     } else if req.contains("set") {
                         println!("requested set services: {}", req);
@@ -198,7 +223,10 @@ impl SafetyRulesSGX {
         } else {
             safety_rules_sgx_runner::start_lsr_enclave();
         }
-        Self { persistent_storage }
+        Self {
+            persistent_storage,
+            cipher: Self::generate_cipher_for_testing(),
+        }
     }
 }
 

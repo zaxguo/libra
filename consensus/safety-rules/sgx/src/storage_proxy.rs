@@ -9,19 +9,52 @@ use libra_crypto::ed25519::{Ed25519PublicKey, Ed25519PrivateKey};
 use libra_types::{
     waypoint::Waypoint,
 };
+use std::str::FromStr;
+use aes_gcm::{
+    Aes256Gcm,
+    aead::{Aead, NewAead, generic_array::GenericArray},
+};
 
 pub struct StorageProxy {
     internal: Option<TcpStream>,
+    cipher: Aes256Gcm,
 }
 
 impl StorageProxy {
     pub fn new(stream: Option<TcpStream>) -> Self {
         Self {
-            internal: stream
+            internal: stream,
+            cipher: Self::generate_cipher_for_testing(),
         }
     }
     pub fn set_stream(&mut self, stream: TcpStream) {
         self.internal = Some(stream);
+    }
+
+    fn test_cipher(&self, cipher: &Aes256Gcm, payload: &[u8]) {
+        // 96 bit nonce
+        let nonce = GenericArray::from_slice(&[0u8; 12]);
+        let ciphertext = cipher.encrypt(nonce, payload).unwrap();
+        sgx_print!("orig: len = {}, data = {:?}", payload.len(), payload);
+        sgx_print!("cipher text: len = {}, data = {:?}", ciphertext.len(), ciphertext);
+        let plaintext = cipher.decrypt(nonce, ciphertext.as_ref()).unwrap();
+        sgx_print!("plain text: len = {}, data = {:?}", plaintext.len(), plaintext);
+    }
+
+    fn encrypt(&self, payload: &[u8]) -> Vec<u8> {
+        let nonce = GenericArray::from_slice(&[0u8;12]);
+        self.cipher.encrypt(nonce, payload).unwrap()
+    }
+
+    fn decrypt(&self, payload: &[u8]) -> Vec<u8> {
+        let nonce =  GenericArray::from_slice(&[0u8;12]);
+        self.cipher.decrypt(nonce, payload).unwrap()
+    }
+
+    fn generate_cipher_for_testing() -> Aes256Gcm {
+        // 256 bit
+        let key = GenericArray::from_slice(&[0u8; 32]);
+        Aes256Gcm::new(key)
     }
 
     fn get(&self, key: &str) -> Vec<u8> {
@@ -39,7 +72,11 @@ impl StorageProxy {
         let len: i32 = lcs::from_bytes(&buf).unwrap();
         let mut payload = vec![0u8; len as usize];
         stream.read_exact(&mut payload).unwrap();
-        payload
+        // decrypt the payload
+        sgx_print!("to decrypt = {:?}", payload);
+        let result = self.decrypt(payload.as_ref());
+        sgx_print!("decrypted = {:?}", result);
+        result
     }
 
     fn set(&self, key: &str, payload: &[u8]) {
@@ -50,10 +87,11 @@ impl StorageProxy {
         // send out payload in one-shot. Message format is the same --
         // Stringified command (ending w/ \n) + len (i32) + payload
         let mut cmd = cmd.as_bytes().to_vec();
-        let len = payload.len() as i32;
+        let e_payload = self.encrypt(payload);
+        let len = e_payload.len() as i32;
         let len = lcs::to_bytes(&len).unwrap();
         cmd.extend(len);
-        cmd.extend(payload);
+        cmd.extend(e_payload);
         stream.write(&cmd).unwrap();
 
         let mut reply = [0u8; 4];
@@ -88,14 +126,16 @@ impl StorageProxy {
     }
     pub fn waypoint(&self) -> Waypoint {
         let payload = self.get("waypoint\n");
-        let ret: Waypoint = lcs::from_bytes(&payload).unwrap();
+        let waypoint = String::from_utf8(payload).unwrap();
+        let ret: Waypoint = Waypoint::from_str(&waypoint).unwrap();
         ret
     }
 
     pub fn author(&self) -> Author {
+        // decrypted Vec<u8> => Str
         let payload = self.get("author\n");
-        let ret: Author = lcs::from_bytes(&payload).unwrap();
-        ret
+        let payload = String::from_utf8(payload).unwrap();
+        std::str::FromStr::from_str(&payload).unwrap()
     }
 
     pub fn set_waypoint(&self, waypoint: &Waypoint) -> Result<()> {
@@ -134,25 +174,9 @@ impl StorageProxy {
         &self,
         version: Ed25519PublicKey,
         ) -> Option<Ed25519PrivateKey> {
-        let cmd = "set:consensus_key_for_version\n";
-        let mut cmd = cmd.as_bytes().to_vec();
-        let payload = lcs::to_bytes(&version).unwrap();
-        let len = payload.len() as i32;
-        cmd.extend(lcs::to_bytes(&len).unwrap());
-        cmd.extend(payload);
-        let mut stream = self.internal.as_ref().unwrap();
-        stream.write(&cmd).unwrap();
 
-        // read reply, message format:
-        // first 4 bytes: payload length (len)
-        // following (len) bytes: payload
-        let mut buf = [0u8; 4];
-        stream.read_exact(&mut buf).unwrap();
-        let len: i32 = lcs::from_bytes(&buf).unwrap();
-        let mut payload = vec![0u8; len as usize];
-        stream.read_exact(&mut payload).unwrap();
-        // Result cannot be deserialized, use Option as a workaround
-        let payload: Option<Ed25519PrivateKey> = lcs::from_bytes(&payload).unwrap();
-        payload
+        let curr_key = self.get("curr_consensus_key\n");
+        let payload: Ed25519PrivateKey = lcs::from_bytes(&curr_key).unwrap();
+        Some(payload)
     }
-}
+ }

@@ -95,6 +95,12 @@ impl<T: Send + Sync + TimeService> KVStorage for OnDiskStorageInternal<T> {
     fn reset_and_clear(&mut self) -> Result<(), Error> {
         self.write(&HashMap::new())
     }
+
+    #[cfg(any(test, feature = "testing"))]
+    fn encrypt_and_convert_all(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+ 
 }
 
 impl<T: TimeService + Send + Sync> CryptoKVStorage for OnDiskStorageInternal<T> {}

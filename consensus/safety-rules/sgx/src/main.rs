@@ -19,6 +19,7 @@ mod consensus_state;
 mod storage_proxy;
 mod error;
 mod t_safety_rules;
+mod seal;
 
 pub const LSR_SGX_ADDRESS: &str = "localhost:8888";
 

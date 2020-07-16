@@ -51,24 +51,24 @@ pub type Callback = Box<
 
 pub fn run_test_suite(safety_rules: &Callback) {
     test_sgx_tsafety_rules(safety_rules);
-    test_bad_execution_output(safety_rules);
-    test_commit_rule_consecutive_rounds(safety_rules);
+    //test_bad_execution_output(safety_rules);
+    //test_commit_rule_consecutive_rounds(safety_rules);
     // end-to-end is not working due to the payload cannot fit inside SGX mem!!
     //test_end_to_end(safety_rules);
-    test_initialize(safety_rules);
-    test_preferred_block_rule(safety_rules);
-    test_sign_timeout(safety_rules);
-    test_voting(safety_rules);
-    test_voting_potential_commit_id(safety_rules);
-    test_voting_bad_epoch(safety_rules);
-    test_sign_old_proposal(safety_rules);
-    test_sign_proposal_with_bad_signer(safety_rules);
-    test_sign_proposal_with_invalid_qc(safety_rules);
-    test_sign_proposal_with_early_preferred_round(safety_rules);
-    test_uninitialized_signer(safety_rules);
-    test_reconcile_key(safety_rules);
-    test_validator_not_in_set(safety_rules);
-    test_key_not_in_store(safety_rules);
+    //test_initialize(safety_rules);
+    //test_preferred_block_rule(safety_rules);
+    //test_sign_timeout(safety_rules);
+    //test_voting(safety_rules);
+    //test_voting_potential_commit_id(safety_rules);
+    //test_voting_bad_epoch(safety_rules);
+    //test_sign_old_proposal(safety_rules);
+    //test_sign_proposal_with_bad_signer(safety_rules);
+    //test_sign_proposal_with_invalid_qc(safety_rules);
+    //test_sign_proposal_with_early_preferred_round(safety_rules);
+    //test_uninitialized_signer(safety_rules);
+    //test_reconcile_key(safety_rules);
+    //test_validator_not_in_set(safety_rules);
+    //test_key_not_in_store(safety_rules);
 }
 
 fn test_bad_execution_output(safety_rules: &Callback) {

@@ -27,6 +27,9 @@ pub trait KVStorage: Send + Sync {
     /// something that should be supported in production.
     #[cfg(any(test, feature = "testing"))]
     fn reset_and_clear(&mut self) -> Result<(), Error>;
+
+    #[cfg(any(test, feature = "testing"))]
+    fn encrypt_and_convert_all(&mut self) -> Result<(), Error>;
 }
 
 /// A container for a get response that contains relevant metadata and the value stored at the

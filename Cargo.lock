@@ -2941,6 +2941,7 @@ dependencies = [
 name = "libra-secure-storage"
 version = "0.1.0"
 dependencies = [
+ "aes-gcm 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "enum_dispatch 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3237,12 +3238,15 @@ dependencies = [
 name = "lsr-sgx"
 version = "0.1.0"
 dependencies = [
+ "aes-gcm 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "anyhow 1.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "consensus-types 0.1.0",
  "libra-canonical-serialization 0.1.0",
  "libra-crypto 0.1.0",
  "libra-types 0.1.0",
+ "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.114 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sgx-isa 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -4956,6 +4960,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "safety-rules"
 version = "0.1.0"
 dependencies = [
+ "aes-gcm 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "aesm-client 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "anyhow 1.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "consensus-types 0.1.0",
