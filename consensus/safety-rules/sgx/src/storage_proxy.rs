@@ -1,11 +1,15 @@
 use std::net::{TcpStream};
 use anyhow::Result;
+use thiserror::Error;
 use std::io::prelude::*;
 use consensus_types::{
     common::{Round, Author},
     vote::Vote,
 };
-use libra_crypto::ed25519::{Ed25519PublicKey, Ed25519PrivateKey};
+use libra_crypto::{
+    ed25519::{Ed25519PublicKey, Ed25519PrivateKey},
+    PrivateKey,
+};
 use libra_types::{
     waypoint::Waypoint,
 };
@@ -48,7 +52,9 @@ impl StorageProxy {
 
     fn decrypt(&self, payload: &[u8]) -> Vec<u8> {
         let nonce =  GenericArray::from_slice(&[0u8;12]);
-        self.cipher.decrypt(nonce, payload).unwrap()
+        let result = self.cipher.decrypt(nonce, payload);
+        sgx_print!("decrypted = {:#?}", result);
+        result.unwrap()
     }
 
     fn generate_cipher_for_testing() -> Aes256Gcm {
@@ -175,8 +181,29 @@ impl StorageProxy {
         version: Ed25519PublicKey,
         ) -> Option<Ed25519PrivateKey> {
 
-        let curr_key = self.get("curr_consensus_key\n");
-        let payload: Ed25519PrivateKey = lcs::from_bytes(&curr_key).unwrap();
-        Some(payload)
+        let payload = self.get("curr_consensus_key\n");
+        let curr_key = lcs::from_bytes::<Ed25519PrivateKey>(&payload);
+        match curr_key {
+            Ok(curr_key) => {
+                if curr_key.public_key().eq(&version) {
+                    return Some(curr_key);
+                }
+            }
+            Err(_) => {
+                return None;
+            }
+        }
+        let payload = self.get("prev_consensus_key\n");
+        let prev_key = lcs::from_bytes::<Ed25519PrivateKey>(&payload);
+        match prev_key {
+            Ok(prev_key) => {
+                if prev_key.public_key().eq(&version) {
+                    Some(prev_key)
+                } else {
+                    None
+                }
+            }
+            Err(_) => None,
+        }
     }
  }

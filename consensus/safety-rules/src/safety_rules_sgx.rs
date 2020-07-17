@@ -94,37 +94,24 @@ impl SafetyRulesSGX {
     fn handle_set(&mut self, command: &str, payload: &[u8]) -> Vec<u8> {
         match command {
             "set:waypoint" => {
-                let waypoint: Waypoint = lcs::from_bytes(payload).unwrap();
-                self.persistent_storage.set_waypoint(&waypoint).unwrap();
-                lcs::to_bytes(&waypoint).unwrap()
+                self.persistent_storage.set_waypoint_bytes(payload.to_vec()).unwrap();
+                payload.to_vec()
             }
             "set:last_voted_round" => {
-                //let last_voted_round: Round = lcs::from_bytes(payload).unwrap();
-                //self.persistent_storage.set_last_voted_round(last_voted_round).unwrap();
                 self.persistent_storage.set_last_voted_round_bytes(payload.to_vec()).unwrap();
                 payload.to_vec()
             }
             "set:preferred_round" => {
-                let preferred_round: Round = lcs::from_bytes(payload).unwrap();
-                self.persistent_storage.set_preferred_round(preferred_round).unwrap();
-                lcs::to_bytes(&preferred_round).unwrap()
+                self.persistent_storage.set_preferred_round_bytes(payload.to_vec()).unwrap();
+                payload.to_vec()
             }
             "set:last_vote" => {
-                //let last_vote: Option<Vote> = lcs::from_bytes(payload).unwrap();
-                //self.persistent_storage.set_last_vote(last_vote.clone()).unwrap();
                 self.persistent_storage.set_last_vote_bytes(payload.to_vec()).unwrap();
                 payload.to_vec()
             }
             "set:epoch" => {
-                let epoch: u64 = lcs::from_bytes(payload).unwrap();
-                self.persistent_storage.set_epoch(epoch.clone()).unwrap();
-                lcs::to_bytes(&epoch).unwrap()
-            }
-            "set:consensus_key_for_version" => {
-                let version: Ed25519PublicKey = lcs::from_bytes(&payload).unwrap();
-                println!("receiving pub key = {}", version);
-                let privkey = self.persistent_storage.consensus_key_for_version(version).ok();
-                lcs::to_bytes(&privkey).unwrap()
+                self.persistent_storage.set_epoch_bytes(payload.to_vec()).unwrap();
+                payload.to_vec()
             }
             _ => {
                 println!("LSR: unrecognized set command! [{}]", command);
@@ -157,7 +144,7 @@ impl SafetyRulesSGX {
                 self.persistent_storage.curr_consensus_key_bytes().unwrap()
             }
             "get:prev_consensus_key" => {
-                self.persistent_storage.prev_consensus_key_bytes().unwrap()
+                self.persistent_storage.prev_consensus_key_bytes()
             }
            _ => {
                println!("I am not supposed to be here :(");

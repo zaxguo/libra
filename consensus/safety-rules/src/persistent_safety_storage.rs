@@ -118,10 +118,12 @@ impl PersistentSafetyStorage {
 
     pub fn prev_consensus_key_bytes(
         &self,
-    ) -> Result<Vec<u8>> {
+    ) -> Vec<u8> {
         let resp = self.internal_store
-            .get("consensus_previous")?;
-        resp.value.bytes().map_err(|e| e.into())
+            .get("consensus_previous");
+        println!("{:#?}", resp);
+        lcs::to_bytes(&resp).unwrap()
+        //resp.value.bytes().map_err(|e| e.into())
     }
 
 
@@ -143,6 +145,11 @@ impl PersistentSafetyStorage {
 
     pub fn set_epoch(&mut self, epoch: u64) -> Result<()> {
         self.internal_store.set(EPOCH, Value::U64(epoch))?;
+        Ok(())
+    }
+
+    pub fn set_epoch_bytes(&mut self, epoch: Vec<u8>) -> Result<()> {
+        self.internal_store.set(EPOCH, Value::Bytes(epoch))?;
         Ok(())
     }
 
@@ -190,6 +197,12 @@ impl PersistentSafetyStorage {
         Ok(())
     }
 
+    pub fn set_preferred_round_bytes(&mut self, preferred_round: Vec<u8>) -> Result<()> {
+        self.internal_store
+            .set(PREFERRED_ROUND, Value::Bytes(preferred_round))?;
+        Ok(())
+    }
+
     pub fn waypoint(&self) -> Result<Waypoint> {
         let waypoint = self
             .internal_store
@@ -207,6 +220,12 @@ impl PersistentSafetyStorage {
     pub fn set_waypoint(&mut self, waypoint: &Waypoint) -> Result<()> {
         self.internal_store
             .set(WAYPOINT, Value::String(waypoint.to_string()))?;
+        Ok(())
+    }
+
+    pub fn set_waypoint_bytes(&mut self, waypoint: Vec<u8>) -> Result<()> {
+        self.internal_store
+            .set(WAYPOINT, Value::Bytes(waypoint))?;
         Ok(())
     }
 
