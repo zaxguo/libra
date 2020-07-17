@@ -1,6 +1,5 @@
 use std::net::{TcpStream};
 use anyhow::Result;
-use thiserror::Error;
 use std::io::prelude::*;
 use consensus_types::{
     common::{Round, Author},
@@ -45,17 +44,21 @@ impl StorageProxy {
         sgx_print!("plain text: len = {}, data = {:?}", plaintext.len(), plaintext);
     }
 
-    fn encrypt(&self, payload: &[u8]) -> Vec<u8> {
+     fn encrypt(&self, payload: &[u8]) -> Vec<u8> {
         let nonce = GenericArray::from_slice(&[0u8;12]);
         self.cipher.encrypt(nonce, payload).unwrap()
     }
 
     fn decrypt(&self, payload: &[u8]) -> Vec<u8> {
         let nonce =  GenericArray::from_slice(&[0u8;12]);
-        let result = self.cipher.decrypt(nonce, payload);
-        sgx_print!("decrypted = {:#?}", result);
-        result.unwrap()
-    }
+        // Decryption fail due to persistent storage cannot provide
+        // valid encrypted bytes, which can be trying to get the data
+        // of non-existing keys
+        match self.cipher.decrypt(nonce, payload) {
+            Ok(value) => value,
+            Err(_) => Vec::new(),
+        }
+     }
 
     fn generate_cipher_for_testing() -> Aes256Gcm {
         // 256 bit
