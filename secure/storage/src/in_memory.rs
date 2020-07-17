@@ -100,11 +100,7 @@ impl<T: Send + Sync + TimeService> KVStorage for InMemoryStorageInternal<T> {
             let value = match &response.value {
                 Value::Bytes(value) => value.clone(),
                 Value::U64(value) => lcs::to_bytes(&value.clone()).unwrap(),
-                Value::String(value) => {
-                    println!("string value = {}", value);
-                    value.as_str().as_bytes().to_vec()
-                }
-                ,
+                Value::String(value) => value.as_str().as_bytes().to_vec(),
                 Value::Ed25519PublicKey(value) => lcs::to_bytes(&value.clone()).unwrap(),
                 Value::Ed25519PrivateKey(value) => lcs::to_bytes(&value.clone()).unwrap(),
                 Value::HashValue(value) => lcs::to_bytes(&value.clone()).unwrap(),
@@ -112,12 +108,10 @@ impl<T: Send + Sync + TimeService> KVStorage for InMemoryStorageInternal<T> {
                     return Err(Error::InternalError("Incompatible type!".into()));
                 }
             };
-            println!("orig: {}: {:?}", key, value);
+            println!("encrypting {}...", key);
             let e_bytes = cipher.encrypt(nonce, value.as_ref()).unwrap();
-            println!("encrypted {}: {:?}", key, e_bytes);
             let bytes = cipher.decrypt(nonce, e_bytes.as_ref()).unwrap();
-            println!("decrypting {}: {:?}", key, bytes);
-            self.set(key, Value::Bytes(e_bytes));
+            self.set(key, Value::Bytes(e_bytes)).unwrap();
         }
         Ok(())
     }

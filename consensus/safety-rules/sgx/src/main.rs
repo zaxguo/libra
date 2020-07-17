@@ -9,7 +9,7 @@ use consensus_types::{
 
 use crate::{
     safety_rules::SafetyRules,
-    t_safety_rules::TSafetyRules,
+    t_safety_rules::*,
 };
 
 #[macro_use]
@@ -24,13 +24,6 @@ mod seal;
 pub const LSR_SGX_ADDRESS: &str = "localhost:8888";
 
 #[allow(dead_code)]
-fn respond(payload: &[u8], mut stream: TcpStream) {
-    let len = payload.len() as i32;
-    stream.write(&lcs::to_bytes(&len).unwrap()).unwrap();
-    stream.write(payload).unwrap();
-}
-
-#[allow(dead_code)]
 fn test_mem_alloc() {
     let mut mem = Vec::new();
     loop {
@@ -40,12 +33,21 @@ fn test_mem_alloc() {
     }
 }
 
+fn prepare_safety_rules_result(ret: &[u8]) -> Vec<u8> {
+    let mut result: Vec<u8> = "done\n".as_bytes().to_vec();
+    let len = ret.len() as i32;
+    let mut payload = lcs::to_bytes(&len).unwrap();
+    payload.extend(ret.to_vec());
+    result.extend(payload);
+    result
+}
+
 fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Result<()> {
     let peer_addr = stream.peer_addr()?;
     let local_addr = stream.local_addr()?;
     sgx_print!(
-        "accept meesage from local {:?}, peer {:?}, stream = {:?}",
-        local_addr, peer_addr, stream
+        "receiving LSR reqs from {:?}, stream = {:?}",
+        peer_addr, stream
     );
     let mut reader = BufReader::new(&stream);
     let mut request = String::new();
@@ -53,42 +55,38 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
     let buf = reader.buffer();
     let ret;
     match request.as_str().trim() {
-        "req:init" => {
+        // TSafetyRules
+        INITIALIZE => {
             // fill the read of buf
             let input: EpochChangeProof = lcs::from_bytes(buf).unwrap();
             let result = lsr.initialize(&input);
             let response = lcs::to_bytes(&result).unwrap();
             ret = response;
         }
-        "req:consensus_state" => {
+        CONSENSUS_STATE => {
             let consensus_state = lsr.consensus_state();
             let response = lcs::to_bytes(&consensus_state).unwrap();
-            sgx_print!("consensus_state:  {:#?}", consensus_state);
             ret = response;
         }
-        "req:construct_and_sign_vote" => {
-            sgx_print!("buf size = {}", buf.len());
+        CONSTRUCT_AND_SIGN_VOTE => {
             let input: MaybeSignedVoteProposal = lcs::from_bytes(buf).unwrap();
             let vote = lsr.construct_and_sign_vote(&input);
             let response = lcs::to_bytes(&vote).unwrap();
-            sgx_print!("construct_and_sign_vote:  {:#?}", vote);
             ret = response;
         }
-        "req:sign_proposal" => {
+        SIGN_PROPOSAL => {
             let input: BlockData = lcs::from_bytes(buf).unwrap();
             let proposal = lsr.sign_proposal(input);
             let response = lcs::to_bytes(&proposal).unwrap();
-            sgx_print!("sign_proposal:  {:#?}", proposal);
             ret = response;
         }
-        "req:sign_timeout" => {
+        SIGN_TIMEOUT => {
             let input: Timeout = lcs::from_bytes(buf).unwrap();
             let timeout = lsr.sign_timeout(&input);
             let response = lcs::to_bytes(&timeout).unwrap();
-            sgx_print!("sign_timeout:  {:#?}", timeout);
             ret = response;
         }
-        "req:reset" => {
+        RESET => {
             lsr.reset();
             ret = vec![0u8;4]
         }
@@ -97,13 +95,8 @@ fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Re
             ret = vec![0u8;4];
         }
     }
-
-    let len = ret.len() as i32;
-    let mut payload = lcs::to_bytes(&len).unwrap();
-    payload.extend(ret);
-    let mut ret: Vec<u8> = "done\n".as_bytes().to_vec();
-    ret.extend(payload);
-    stream.write(&ret).unwrap();
+    let result = prepare_safety_rules_result(&ret);
+    stream.write(&result).unwrap();
     Ok(())
 }
 

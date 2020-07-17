@@ -93,12 +93,6 @@ impl PersistentSafetyStorage {
         std::str::FromStr::from_str(&res)
     }
 
-    // use proc_macro to generate???
-    pub fn author_bytes(&self) -> Result<Vec<u8>> {
-        let resp = self.internal_store.get(OPERATOR_ACCOUNT)?;
-        resp.value.bytes().map_err(|e| e.into())
-    }
-
     pub fn consensus_key_for_version(
         &self,
         version: Ed25519PublicKey,
@@ -107,25 +101,6 @@ impl PersistentSafetyStorage {
             .export_private_key_for_version(CONSENSUS_KEY, version)
             .map_err(|e| e.into())
     }
-
-    pub fn curr_consensus_key_bytes(
-        &self,
-    ) -> Result<Vec<u8>> {
-        let resp = self.internal_store
-            .get(CONSENSUS_KEY)?;
-        resp.value.bytes().map_err(|e| e.into())
-    }
-
-    pub fn prev_consensus_key_bytes(
-        &self,
-    ) -> Vec<u8> {
-        let resp = self.internal_store
-            .get("consensus_previous");
-        println!("{:#?}", resp);
-        lcs::to_bytes(&resp).unwrap()
-        //resp.value.bytes().map_err(|e| e.into())
-    }
-
 
     pub fn execution_public_key(&self) -> Result<Ed25519PublicKey> {
         Ok(self
@@ -138,18 +113,8 @@ impl PersistentSafetyStorage {
         Ok(self.internal_store.get(EPOCH).and_then(|r| r.value.u64())?)
     }
 
-    pub fn epoch_bytes(&self) -> Result<Vec<u8>> {
-        let resp = self.internal_store.get(EPOCH)?;
-        resp.value.bytes().map_err(|e| e.into())
-    }
-
     pub fn set_epoch(&mut self, epoch: u64) -> Result<()> {
         self.internal_store.set(EPOCH, Value::U64(epoch))?;
-        Ok(())
-    }
-
-    pub fn set_epoch_bytes(&mut self, epoch: Vec<u8>) -> Result<()> {
-        self.internal_store.set(EPOCH, Value::Bytes(epoch))?;
         Ok(())
     }
 
@@ -160,21 +125,10 @@ impl PersistentSafetyStorage {
             .and_then(|r| r.value.u64())?)
     }
 
-    pub fn last_voted_round_bytes(&self) -> Result<Vec<u8>> {
-        let resp = self.internal_store.get(LAST_VOTED_ROUND)?;
-        resp.value.bytes().map_err(|e| e.into())
-    }
-
     pub fn set_last_voted_round(&mut self, last_voted_round: Round) -> Result<()> {
         self.internal_store
             .set(LAST_VOTED_ROUND, Value::U64(last_voted_round))?;
         COUNTERS.preferred_round.set(last_voted_round as i64);
-        Ok(())
-    }
-
-    pub fn set_last_voted_round_bytes(&mut self, last_voted_round: Vec<u8>) -> Result<()> {
-        self.internal_store
-            .set(LAST_VOTED_ROUND, Value::Bytes(last_voted_round))?;
         Ok(())
     }
 
@@ -185,21 +139,10 @@ impl PersistentSafetyStorage {
             .and_then(|r| r.value.u64())?)
     }
 
-    pub fn preferred_round_bytes(&self) -> Result<Vec<u8>> {
-        let resp = self.internal_store.get(PREFERRED_ROUND)?;
-        resp.value.bytes().map_err(|e| e.into())
-    }
-
     pub fn set_preferred_round(&mut self, preferred_round: Round) -> Result<()> {
         self.internal_store
             .set(PREFERRED_ROUND, Value::U64(preferred_round))?;
         COUNTERS.preferred_round.set(preferred_round as i64);
-        Ok(())
-    }
-
-    pub fn set_preferred_round_bytes(&mut self, preferred_round: Vec<u8>) -> Result<()> {
-        self.internal_store
-            .set(PREFERRED_ROUND, Value::Bytes(preferred_round))?;
         Ok(())
     }
 
@@ -212,20 +155,9 @@ impl PersistentSafetyStorage {
             .map_err(|e| anyhow::anyhow!("Unable to parse waypoint: {}", e))
     }
 
-    pub fn waypoint_bytes(&self) -> Result<Vec<u8>> {
-        let resp = self.internal_store.get(WAYPOINT)?;
-        resp.value.bytes().map_err(|e| e.into())
-    }
-
     pub fn set_waypoint(&mut self, waypoint: &Waypoint) -> Result<()> {
         self.internal_store
             .set(WAYPOINT, Value::String(waypoint.to_string()))?;
-        Ok(())
-    }
-
-    pub fn set_waypoint_bytes(&mut self, waypoint: Vec<u8>) -> Result<()> {
-        self.internal_store
-            .set(WAYPOINT, Value::Bytes(waypoint))?;
         Ok(())
     }
 
@@ -239,21 +171,24 @@ impl PersistentSafetyStorage {
         Ok(result)
     }
 
-    pub fn last_vote_bytes(&self) -> Result<Vec<u8>> {
-        let resp = self.internal_store.get(LAST_VOTE)?;
-        resp.value.bytes().map_err(|e| e.into())
-    }
-
     pub fn set_last_vote(&mut self, vote: Option<Vote>) -> Result<()> {
         self.internal_store
             .set(LAST_VOTE, Value::Bytes(lcs::to_bytes(&vote)?))?;
         Ok(())
     }
 
-    pub fn set_last_vote_bytes(&mut self, vote: Vec<u8>) -> Result<()> {
+    pub fn set(&mut self, key: &str, payload: &[u8]) -> Result<()> {
         self.internal_store
-            .set(LAST_VOTE, Value::Bytes(vote))?;
+            .set(key, Value::Bytes(payload.to_vec()))?;
         Ok(())
+    }
+
+    pub fn get(&self, key: &str) -> Vec<u8> {
+        let resp = self.internal_store.get(key);
+        match resp {
+            Ok(resp) =>  resp.value.bytes().unwrap(),
+            Err(_) => lcs::to_bytes(&resp).unwrap(),
+        }
     }
 
     #[cfg(any(test, feature = "testing"))]

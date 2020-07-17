@@ -9,6 +9,10 @@ use libra_crypto::{
     ed25519::{Ed25519PublicKey, Ed25519PrivateKey},
     PrivateKey,
 };
+use libra_global_constants::{
+    CONSENSUS_KEY, EPOCH, LAST_VOTE, LAST_VOTED_ROUND,
+    OPERATOR_ACCOUNT, PREFERRED_ROUND, WAYPOINT,
+};
 use libra_types::{
     waypoint::Waypoint,
 };
@@ -32,16 +36,6 @@ impl StorageProxy {
     }
     pub fn set_stream(&mut self, stream: TcpStream) {
         self.internal = Some(stream);
-    }
-
-    fn test_cipher(&self, cipher: &Aes256Gcm, payload: &[u8]) {
-        // 96 bit nonce
-        let nonce = GenericArray::from_slice(&[0u8; 12]);
-        let ciphertext = cipher.encrypt(nonce, payload).unwrap();
-        sgx_print!("orig: len = {}, data = {:?}", payload.len(), payload);
-        sgx_print!("cipher text: len = {}, data = {:?}", ciphertext.len(), ciphertext);
-        let plaintext = cipher.decrypt(nonce, ciphertext.as_ref()).unwrap();
-        sgx_print!("plain text: len = {}, data = {:?}", plaintext.len(), plaintext);
     }
 
      fn encrypt(&self, payload: &[u8]) -> Vec<u8> {
@@ -70,6 +64,7 @@ impl StorageProxy {
         // send out get command
         let prefix: String = "get:".to_owned();
         let cmd = prefix + key;
+        let cmd = cmd + "\n".into();
         let mut stream = self.internal.as_ref().unwrap();
         stream.write(cmd.as_bytes()).unwrap();
 
@@ -82,15 +77,14 @@ impl StorageProxy {
         let mut payload = vec![0u8; len as usize];
         stream.read_exact(&mut payload).unwrap();
         // decrypt the payload
-        sgx_print!("to decrypt = {:?}", payload);
         let result = self.decrypt(payload.as_ref());
-        sgx_print!("decrypted = {:?}", result);
         result
     }
 
     fn set(&self, key: &str, payload: &[u8]) {
         let prefix: String = "set:".to_owned();
         let cmd = prefix + key;
+        let cmd = cmd + "\n".into();
         let mut stream = self.internal.as_ref().unwrap();
 
         // send out payload in one-shot. Message format is the same --
@@ -111,30 +105,30 @@ impl StorageProxy {
     }
 
     pub fn epoch(&self) -> u64 {
-        let payload = self.get("epoch\n");
+        let payload = self.get(EPOCH);
         let ret: u64 = lcs::from_bytes(&payload).unwrap();
         ret
     }
 
     pub fn last_voted_round(&self) -> Round {
-        let payload = self.get("last_voted_round\n");
+        let payload = self.get(LAST_VOTED_ROUND);
         let ret: Round = lcs::from_bytes(&payload).unwrap();
         ret
     }
 
     pub fn last_vote(&self) -> Option<Vote> {
-        let payload = self.get("last_vote\n");
+        let payload = self.get(LAST_VOTE);
         let ret: Option<Vote> = lcs::from_bytes(&payload).unwrap();
         ret
     }
 
     pub fn preferred_round(&self) -> Round {
-        let payload = self.get("preferred_round\n");
+        let payload = self.get(PREFERRED_ROUND);
         let ret: Round = lcs::from_bytes(&payload).unwrap();
         ret
     }
     pub fn waypoint(&self) -> Waypoint {
-        let payload = self.get("waypoint\n");
+        let payload = self.get(WAYPOINT);
         let waypoint = String::from_utf8(payload).unwrap();
         let ret: Waypoint = Waypoint::from_str(&waypoint).unwrap();
         ret
@@ -142,49 +136,48 @@ impl StorageProxy {
 
     pub fn author(&self) -> Author {
         // decrypted Vec<u8> => Str
-        let payload = self.get("author\n");
+        let payload = self.get(OPERATOR_ACCOUNT);
         let payload = String::from_utf8(payload).unwrap();
         std::str::FromStr::from_str(&payload).unwrap()
     }
 
     pub fn set_waypoint(&self, waypoint: &Waypoint) -> Result<()> {
         let payload = lcs::to_bytes(waypoint).unwrap();
-        self.set("waypoint\n", &payload);
+        self.set(WAYPOINT, &payload);
         Ok(())
     }
 
     pub fn set_last_voted_round(&self, last_voted_round: Round) -> Result<()> {
         let payload = lcs::to_bytes(&last_voted_round).unwrap();
-        self.set("last_voted_round\n", &payload);
+        self.set(LAST_VOTED_ROUND, &payload);
         Ok(())
     }
 
     pub fn set_preferred_round(&self, preferred_round: Round) -> Result<()> {
         let payload = lcs::to_bytes(&preferred_round).unwrap();
-        self.set("preferred_round\n", &payload);
+        self.set(PREFERRED_ROUND, &payload);
         Ok(())
     }
 
     pub fn set_last_vote(&self, vote: Option<Vote>) -> Result<()> {
         let payload = lcs::to_bytes(&vote).unwrap();
-        self.set("last_vote\n", &payload);
+        self.set(LAST_VOTE, &payload);
         Ok(())
     }
 
     pub fn set_epoch(&self, epoch: u64) -> Result<()> {
         let payload = lcs::to_bytes(&epoch).unwrap();
-        self.set("epoch\n", &payload);
+        self.set(EPOCH, &payload);
         Ok(())
     }
 
-    // different than previous get since it has payload, which is the pubkey version
-    // we will use set command for convenience
+    // Rewritten to fit get/set semantics
     pub fn consensus_key_for_version(
         &self,
         version: Ed25519PublicKey,
         ) -> Option<Ed25519PrivateKey> {
 
-        let payload = self.get("curr_consensus_key\n");
+        let payload = self.get(CONSENSUS_KEY);
         let curr_key = lcs::from_bytes::<Ed25519PrivateKey>(&payload);
         match curr_key {
             Ok(curr_key) => {
@@ -196,7 +189,8 @@ impl StorageProxy {
                 return None;
             }
         }
-        let payload = self.get("prev_consensus_key\n");
+        // note this is hard coded
+        let payload = self.get("consensus_previous");
         let prev_key = lcs::from_bytes::<Ed25519PrivateKey>(&payload);
         match prev_key {
             Ok(prev_key) => {

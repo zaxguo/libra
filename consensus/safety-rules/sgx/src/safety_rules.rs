@@ -19,10 +19,7 @@ use libra_types::{
     ledger_info::LedgerInfo, validator_signer::ValidatorSigner, waypoint::Waypoint,
 };
 use std::cmp::Ordering;
-
-use std::io::{BufReader};
 use std::net::{TcpStream};
-
 use crate::{
     consensus_state::ConsensusState,
     t_safety_rules::TSafetyRules,

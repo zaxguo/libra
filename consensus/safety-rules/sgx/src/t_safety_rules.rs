@@ -9,6 +9,13 @@ use consensus_types::{
 use libra_crypto::ed25519::Ed25519Signature;
 use libra_types::epoch_change::EpochChangeProof;
 
+pub const CONSENSUS_STATE: &str = "req:consensus_state";
+pub const INITIALIZE: &str = "req:init";
+pub const CONSTRUCT_AND_SIGN_VOTE: &str = "req:construct_and_sign_vote";
+pub const SIGN_PROPOSAL: &str = "req:sign_proposal";
+pub const SIGN_TIMEOUT: &str = "req:sign_timeout";
+pub const RESET: &str = "req:reset";
+
 /// Interface for SafetyRules
 pub trait TSafetyRules {
     /// Provides the internal state of SafetyRules for monitoring / debugging purposes. This does
