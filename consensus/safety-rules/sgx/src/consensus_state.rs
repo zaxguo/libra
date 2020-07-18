@@ -1,4 +1,3 @@
-// lwg: directly from safety-rules/src/consensus_state.rs
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 

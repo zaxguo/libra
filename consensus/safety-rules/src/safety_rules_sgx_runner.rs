@@ -15,8 +15,7 @@ use std::net::{TcpListener};
 use std::thread;
 use enclave_runner::EnclaveBuilder;
 use sgxs_loaders::isgx::Device as IsgxDevice;
-
-pub const LSR_SGX_ADDRESS: &str = "localhost:8888";
+use libra_types::{sgx_types::LSR_SGX_ADDRESS};
 
 fn get_enclave_file() -> Result<String, ()> {
 /*
@@ -68,11 +67,11 @@ impl SyncListener for SafetyRulesSGXListener {
     }
 }
 
-/* lwg: the dummy struct is kind of ugly but has to exist for "initialize" the binding process */
+/* the dummy struct is kind of ugly but has to exist for "initialize" the binding process */
 #[derive(Debug)]
 struct SGXService;
 impl UsercallExtension for SGXService{
-    /* lwg: this is more like a stub, agreed upon Fortanix ABI to communicate with enclave */
+    /* this is more like a stub, agreed upon Fortanix ABI to communicate with enclave */
     fn bind_stream(
         &self,
         addr: &str,

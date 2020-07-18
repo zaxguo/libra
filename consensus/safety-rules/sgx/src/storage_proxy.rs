@@ -1,3 +1,6 @@
+// Copyright (c) The Libra Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use std::net::{TcpStream};
 use anyhow::Result;
 use std::io::prelude::*;
@@ -15,6 +18,10 @@ use libra_global_constants::{
 };
 use libra_types::{
     waypoint::Waypoint,
+    sgx_types::{
+        SgxMsg,
+        SgxReq,
+    },
 };
 use std::str::FromStr;
 use aes_gcm::{
@@ -38,14 +45,19 @@ impl StorageProxy {
         self.internal = Some(stream);
     }
 
-     fn encrypt(&self, payload: &[u8]) -> Vec<u8> {
+    pub fn get_stream(&self) -> TcpStream {
+        let stream = self.internal.as_ref().unwrap();
+        stream.try_clone().unwrap()
+    }
+
+    fn encrypt(&self, payload: &[u8]) -> Vec<u8> {
         let nonce = GenericArray::from_slice(&[0u8;12]);
         self.cipher.encrypt(nonce, payload).unwrap()
     }
 
     fn decrypt(&self, payload: &[u8]) -> Vec<u8> {
         let nonce =  GenericArray::from_slice(&[0u8;12]);
-        // Decryption fail due to persistent storage cannot provide
+        // Decryption might fail due to persistent storage cannot provide
         // valid encrypted bytes, which can be trying to get the data
         // of non-existing keys
         match self.cipher.decrypt(nonce, payload) {
@@ -61,47 +73,24 @@ impl StorageProxy {
     }
 
     fn get(&self, key: &str) -> Vec<u8> {
-        // send out get command
-        let prefix: String = "get:".to_owned();
-        let cmd = prefix + key;
-        let cmd = cmd + "\n".into();
-        let mut stream = self.internal.as_ref().unwrap();
-        stream.write(cmd.as_bytes()).unwrap();
+        let msg = SgxMsg::new(SgxReq::Get, Some(key.into()), vec![0]);
+        let mut stream = self.get_stream();
+        stream.write(msg.to_bytes().as_ref()).unwrap();
 
-        // read reply, message format:
-        // first 4 bytes: payload length (len)
-        // following (len) bytes: payload
-        let mut buf = [0u8; 4];
-        stream.read_exact(&mut buf).unwrap();
-        let len: i32 = lcs::from_bytes(&buf).unwrap();
-        let mut payload = vec![0u8; len as usize];
-        stream.read_exact(&mut payload).unwrap();
+        let reply = SgxMsg::from_stream(&mut stream);
+        let payload = reply.payload();
         // decrypt the payload
         let result = self.decrypt(payload.as_ref());
         result
     }
 
     fn set(&self, key: &str, payload: &[u8]) {
-        let prefix: String = "set:".to_owned();
-        let cmd = prefix + key;
-        let cmd = cmd + "\n".into();
-        let mut stream = self.internal.as_ref().unwrap();
-
-        // send out payload in one-shot. Message format is the same --
-        // Stringified command (ending w/ \n) + len (i32) + payload
-        let mut cmd = cmd.as_bytes().to_vec();
         let e_payload = self.encrypt(payload);
-        let len = e_payload.len() as i32;
-        let len = lcs::to_bytes(&len).unwrap();
-        cmd.extend(len);
-        cmd.extend(e_payload);
-        stream.write(&cmd).unwrap();
-
-        let mut reply = [0u8; 4];
-        stream.read_exact(&mut reply).unwrap();
-        let len: i32 = lcs::from_bytes(&reply).unwrap();
-        let mut buf = vec![0u8; len as usize];
-        stream.read_exact(&mut buf).unwrap();
+        let msg = SgxMsg::new(SgxReq::Set, Some(key.into()), e_payload.to_vec());
+        let mut stream = self.get_stream();
+        stream.write(msg.to_bytes().as_ref()).unwrap();
+        // By the time we receive this _reply, we know our set req has hit the disk
+        let _reply = SgxMsg::from_stream(&mut stream);
     }
 
     pub fn epoch(&self) -> u64 {

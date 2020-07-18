@@ -1,3 +1,6 @@
+// Copyright (c) The Libra Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Result;
 use consensus_types::{
     block::Block,
@@ -19,7 +22,7 @@ use libra_types::{
     ledger_info::LedgerInfo, validator_signer::ValidatorSigner, waypoint::Waypoint,
 };
 use std::cmp::Ordering;
-use std::net::{TcpStream};
+use std::net::{TcpStream, Shutdown};
 use crate::{
     consensus_state::ConsensusState,
     t_safety_rules::TSafetyRules,
@@ -211,13 +214,22 @@ impl SafetyRules {
         self.storage_proxy = StorageProxy::new(Some(proxy));
     }
 
+    pub fn get_storage_proxy(&mut self) -> TcpStream {
+        self.storage_proxy.get_stream()
+    }
+
+    pub fn clear_storage_proxy(&mut self) {
+        let stream = self.get_storage_proxy();
+        stream.shutdown(Shutdown::Both).expect("Cannot shutdown storage proxy!");
+        self.storage_proxy = StorageProxy::new(None);
+    }
+
 }
 
 impl TSafetyRules for SafetyRules {
 
     fn initialize(&mut self, proof: &EpochChangeProof) -> Result<(), Error> {
         sgx_print!("Initializing...");
-
         let waypoint = self.storage_proxy.waypoint();
         let last_li = proof
             .verify(&waypoint)

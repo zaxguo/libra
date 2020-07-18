@@ -1,12 +1,21 @@
-use std::io::{BufRead, BufReader, Write, Result};
-use std::net::{TcpStream, TcpListener, Shutdown};
-use libra_types::{epoch_change::EpochChangeProof};
+// Copyright (c) The Libra Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use std::io::{Write, Result};
+use std::net::{TcpListener};
+use libra_types::{
+    epoch_change::EpochChangeProof,
+    sgx_types::{
+        LSR_SGX_ADDRESS,
+        SgxMsg,
+        SgxReq,
+    },
+};
 use consensus_types::{
     block_data::BlockData,
     vote_proposal::{MaybeSignedVoteProposal},
     timeout::Timeout,
 };
-
 use crate::{
     safety_rules::SafetyRules,
     t_safety_rules::*,
@@ -21,8 +30,6 @@ mod error;
 mod t_safety_rules;
 mod seal;
 
-pub const LSR_SGX_ADDRESS: &str = "localhost:8888";
-
 #[allow(dead_code)]
 fn test_mem_alloc() {
     let mut mem = Vec::new();
@@ -34,64 +41,57 @@ fn test_mem_alloc() {
 }
 
 fn prepare_safety_rules_result(ret: &[u8]) -> Vec<u8> {
-    let mut result: Vec<u8> = "done\n".as_bytes().to_vec();
-    let len = ret.len() as i32;
-    let mut payload = lcs::to_bytes(&len).unwrap();
-    payload.extend(ret.to_vec());
-    result.extend(payload);
-    result
+    let msg = SgxMsg::new(SgxReq::Terminate, None, ret.to_vec());
+    msg.to_bytes()
 }
 
-fn process_safety_rules_reqs(lsr: &mut SafetyRules, mut stream: TcpStream) -> Result<()> {
+fn process_safety_rules_reqs(lsr: &mut SafetyRules) -> Result<()> {
+    let mut stream = lsr.get_storage_proxy();
     let peer_addr = stream.peer_addr()?;
-    let local_addr = stream.local_addr()?;
     sgx_print!(
         "receiving LSR reqs from {:?}, stream = {:?}",
         peer_addr, stream
     );
-    let mut reader = BufReader::new(&stream);
-    let mut request = String::new();
-    let _read_bytes = reader.read_line(&mut request).unwrap();
-    let buf = reader.buffer();
+    let msg = SgxMsg::from_stream(&mut stream);
+    let payload = msg.payload();
     let ret;
-    match request.as_str().trim() {
+    match msg.req() {
         // TSafetyRules
-        INITIALIZE => {
-            // fill the read of buf
-            let input: EpochChangeProof = lcs::from_bytes(buf).unwrap();
+        SgxReq::Initialize => {
+            let input: EpochChangeProof = lcs::from_bytes(payload).unwrap();
             let result = lsr.initialize(&input);
             let response = lcs::to_bytes(&result).unwrap();
             ret = response;
         }
-        CONSENSUS_STATE => {
+        SgxReq::ConsensusState => {
             let consensus_state = lsr.consensus_state();
             let response = lcs::to_bytes(&consensus_state).unwrap();
             ret = response;
         }
-        CONSTRUCT_AND_SIGN_VOTE => {
-            let input: MaybeSignedVoteProposal = lcs::from_bytes(buf).unwrap();
+        SgxReq::ConstructAndSignVote => {
+            let input: MaybeSignedVoteProposal = lcs::from_bytes(payload).unwrap();
             let vote = lsr.construct_and_sign_vote(&input);
             let response = lcs::to_bytes(&vote).unwrap();
             ret = response;
         }
-        SIGN_PROPOSAL => {
-            let input: BlockData = lcs::from_bytes(buf).unwrap();
+        SgxReq::SignProposal => {
+            let input: BlockData = lcs::from_bytes(payload).unwrap();
             let proposal = lsr.sign_proposal(input);
             let response = lcs::to_bytes(&proposal).unwrap();
             ret = response;
         }
-        SIGN_TIMEOUT => {
-            let input: Timeout = lcs::from_bytes(buf).unwrap();
+        SgxReq::SignTimeout => {
+            let input: Timeout = lcs::from_bytes(payload).unwrap();
             let timeout = lsr.sign_timeout(&input);
             let response = lcs::to_bytes(&timeout).unwrap();
             ret = response;
         }
-        RESET => {
+        SgxReq::Reset => {
             lsr.reset();
             ret = vec![0u8;4]
         }
         _ => {
-            sgx_print!("invalid req...{}", request);
+            sgx_print!("invalid req...");
             ret = vec![0u8;4];
         }
     }
@@ -108,9 +108,10 @@ fn main() -> Result<()> {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                safety_rules.set_storage_proxy(stream.try_clone().unwrap());
-                process_safety_rules_reqs(&mut safety_rules, stream.try_clone().unwrap())?;
-                stream.shutdown(Shutdown::Both).expect("Shutdown failed..");
+                let stream = stream.try_clone().unwrap();
+                safety_rules.set_storage_proxy(stream);
+                process_safety_rules_reqs(&mut safety_rules)?;
+                safety_rules.clear_storage_proxy();
             }
             Err(_) => {
                 sgx_print!("unable to connect...");
@@ -118,7 +119,7 @@ fn main() -> Result<()> {
         }
     }
     sgx_print!(
-        "Wohoo! LSR_CORE about to terminate",
+        "Wohoo! LSR_SGX about to terminate",
     );
     Ok(())
 }
