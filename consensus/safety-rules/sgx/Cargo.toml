@@ -1,0 +1,24 @@
+[package]
+name = "lsr-sgx"
+version = "0.1.0"
+authors = ["lwg <zaxguo@me.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.114", default-features = false }
+lcs = { path = "../../../common/lcs", version = "0.1.0", package = "libra-canonical-serialization" }
+libra-types = { path = "../../../types", version = "0.1.0" }
+libra-crypto = { path = "../../../crypto/crypto", version = "0.1.0" }
+libra-global-constants = { path = "../../../config/global-constants", version = "0.1.0" }
+consensus-types = { path = "../../consensus-types", version = "0.1.0" }
+thiserror = "1.0.20"
+anyhow = "1.0.31"
+sgx-isa = { version = "0.3.2", features = ["sgxstd"] }
+aes-gcm = "0.6.0"
+rand = "0.6.4"
+
+[package.metadata.fortanix-sgx]
+stack-size=0x20000
+heap-size=0x4000000

@@ -33,6 +33,8 @@ pub mod validator_verifier;
 pub mod vm_status;
 pub mod waypoint;
 pub mod write_set;
+#[macro_use]
+pub mod sgx_types;
 
 pub use account_address::AccountAddress as PeerId;
 

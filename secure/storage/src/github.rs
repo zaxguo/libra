@@ -49,6 +49,11 @@ impl KVStorage for GitHubStorage {
     fn reset_and_clear(&mut self) -> Result<(), Error> {
         self.client.delete_directory("/").map_err(|e| e.into())
     }
+
+    #[cfg(any(test, feature = "testing"))]
+    fn encrypt_and_convert_all(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
 }
 
 impl CryptoKVStorage for GitHubStorage {}

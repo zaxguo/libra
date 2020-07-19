@@ -9,6 +9,7 @@ use libra_config::config::{PersistableConfig, SafetyRulesConfig};
 use libra_secure_push_metrics::MetricsPusher;
 use safety_rules::{Process, COUNTERS};
 use std::{env, process};
+mod safety_rules_sgx_runner;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

@@ -177,6 +177,20 @@ impl PersistentSafetyStorage {
         Ok(())
     }
 
+    pub fn set(&mut self, key: &str, payload: &[u8]) -> Result<()> {
+        self.internal_store
+            .set(key, Value::Bytes(payload.to_vec()))?;
+        Ok(())
+    }
+
+    pub fn get(&self, key: &str) -> Vec<u8> {
+        let resp = self.internal_store.get(key);
+        match resp {
+            Ok(resp) =>  resp.value.bytes().unwrap(),
+            Err(_) => lcs::to_bytes(&resp).unwrap(),
+        }
+    }
+
     #[cfg(any(test, feature = "testing"))]
     pub fn internal_store(&mut self) -> &mut Storage {
         &mut self.internal_store

@@ -30,6 +30,12 @@ impl KVStorage for NamespacedStorage {
     fn reset_and_clear(&mut self) -> Result<(), Error> {
         self.inner.reset_and_clear()
     }
+
+    #[cfg(any(test, feature = "testing"))]
+    fn encrypt_and_convert_all(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+
 }
 
 impl NamespacedStorage {

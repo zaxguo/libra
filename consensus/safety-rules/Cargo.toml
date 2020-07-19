@@ -27,6 +27,12 @@ serde = { version = "1.0.114", default-features = false }
 thiserror = "1.0.20"
 workspace-builder = { path = "../../common/workspace-builder", version = "0.1.0", optional = true }
 
+# lwg: necessary dependency for enclave to run using Fortanix Rust-SGX SDK
+enclave-runner = "0.2.0"
+aesm-client = { version = "0.2", features = ["sgxs"]}
+sgxs-loaders = "0.2.2"
+aes-gcm = "0.6.0"
+
 [dev-dependencies]
 criterion = "0.3.3"
 tempfile = "3.1.0"
@@ -39,5 +45,6 @@ required-features = ["testing"]
 
 [features]
 default = []
+sgx = []
 fuzzing = ["consensus-types/fuzzing", "libra-config/fuzzing"]
 testing = ["libra-secure-storage/testing", "workspace-builder"]

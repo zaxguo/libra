@@ -27,6 +27,7 @@ libra-types = { path = "../../types", version = "0.1.0" }
 libra-vault-client = { path = "vault", version = "0.1.0" }
 libra-github-client = { path = "github", version = "0.1.0" }
 libra-workspace-hack = { path = "../../common/workspace-hack", version = "0.1.0" }
+aes-gcm = "0.6.0"
 
 [dev-dependencies]
 libra-crypto-derive = { path = "../../crypto/crypto-derive", version = "0.1.0" }

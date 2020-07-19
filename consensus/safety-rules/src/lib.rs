@@ -16,12 +16,15 @@ mod serializer;
 mod spawned_process;
 mod t_safety_rules;
 mod thread;
+mod safety_rules_sgx;
+mod safety_rules_sgx_runner;
 
 pub use crate::{
     consensus_state::ConsensusState, counters::COUNTERS, error::Error,
     persistent_safety_storage::PersistentSafetyStorage, process::Process,
     safety_rules::SafetyRules, safety_rules_manager::SafetyRulesManager,
     t_safety_rules::TSafetyRules,
+    safety_rules_sgx::SafetyRulesSGX,
 };
 
 #[cfg(any(test, feature = "testing"))]

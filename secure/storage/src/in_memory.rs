@@ -4,6 +4,10 @@
 use crate::{CryptoKVStorage, Error, GetResponse, KVStorage, Value};
 use libra_secure_time::{RealTimeService, TimeService};
 use std::collections::HashMap;
+use aes_gcm::{
+    Aes256Gcm,
+    aead::{Aead, NewAead, generic_array::GenericArray},
+};
 
 /// InMemoryStorage represents a key value store that is purely in memory and intended for single
 /// threads (or must be wrapped by a Arc<RwLock<>>). This provides no permission checks and simply
@@ -23,6 +27,8 @@ impl InMemoryStorageInternal<RealTimeService> {
     pub fn new() -> Self {
         Self::new_with_time_service(RealTimeService::new())
     }
+
+
 }
 
 impl<T: TimeService> InMemoryStorageInternal<T> {
@@ -75,6 +81,38 @@ impl<T: Send + Sync + TimeService> KVStorage for InMemoryStorageInternal<T> {
     #[cfg(any(test, feature = "testing"))]
     fn reset_and_clear(&mut self) -> Result<(), Error> {
         self.data.clear();
+        Ok(())
+    }
+
+    #[cfg(any(test, feature = "testing"))]
+    fn encrypt_and_convert_all(&mut self) -> Result<(), Error> {
+        let key = GenericArray::from_slice(&[0u8; 32]);
+        let cipher = Aes256Gcm::new(key);
+        let nonce = GenericArray::from_slice(&[0u8; 12]);
+        // the data safety rules care about
+        let keys = ["consensus", "execution", "epoch",
+                    "last_voted_round", "operator_account", "preferred_round",
+                    "waypoint", "last_vote"];
+        for key in keys.iter() {
+            let response = self.get(key).unwrap();
+            // unwrap the Value enum type so lcs only serializes the "Raw" type
+            // (e.g. U64 instead of Value::U64)
+            let value = match &response.value {
+                Value::Bytes(value) => value.clone(),
+                Value::U64(value) => lcs::to_bytes(&value.clone()).unwrap(),
+                Value::String(value) => value.as_str().as_bytes().to_vec(),
+                Value::Ed25519PublicKey(value) => lcs::to_bytes(&value.clone()).unwrap(),
+                Value::Ed25519PrivateKey(value) => lcs::to_bytes(&value.clone()).unwrap(),
+                Value::HashValue(value) => lcs::to_bytes(&value.clone()).unwrap(),
+                _ => {
+                    return Err(Error::InternalError("Incompatible type!".into()));
+                }
+            };
+            println!("encrypting {}...", key);
+            let e_bytes = cipher.encrypt(nonce, value.as_ref()).unwrap();
+            let bytes = cipher.decrypt(nonce, e_bytes.as_ref()).unwrap();
+            self.set(key, Value::Bytes(e_bytes)).unwrap();
+        }
         Ok(())
     }
 }
