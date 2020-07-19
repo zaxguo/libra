@@ -50,41 +50,31 @@ impl SafetyRulesSGX {
     }
 
     fn handle_storage_reqs(&mut self, stream: &mut TcpStream) -> Vec<u8> {
-        let mut buf = [0u8; 256];
-        stream.set_nonblocking(true).expect("Cannot set nonblocking..Boom");
         loop {
-            match stream.peek(&mut buf) {
-                Ok(_len) => {
-                    let msg = SgxMsg::from_stream(stream);
-                    match msg.req() {
-                        SgxReq::Get => {
-                            let key = msg.key();
-                            let payload = self.handle_get(&key);
-                            let msg = SgxMsg::new(SgxReq::Get, None, payload);
-                            stream.write(msg.to_bytes().as_ref()).unwrap();
-                        }
-                        SgxReq::Set => {
-                            let key = msg.key();
-                            let payload = msg.payload();
-                            let reply = self.handle_set(&key, &payload);
-                            let msg = SgxMsg::new(SgxReq::Set, Some(key), reply);
-                            stream.write(msg.to_bytes().as_ref()).unwrap();
-                        }
-                        SgxReq::Terminate => {
-                            println!("storage services finished. about to close.");
-                            let payload = msg.payload().to_vec();
-                            stream.shutdown(Shutdown::Both)
-                                .expect("cannot shutdown stream with SGX...");
-                            return payload;
-                        }
-                        _ => {
-                        }
-                    }
-               }
-                Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
-                    //println!("keep waiting....");
+            let msg = SgxMsg::from_stream(stream);
+            match msg.req() {
+                SgxReq::Terminate => {
+                    println!("storage services finished. about to close.");
+                    let payload = msg.payload().to_vec();
+                    stream.shutdown(Shutdown::Both)
+                        .expect("cannot shutdown stream with SGX...");
+                    return payload;
                 }
-                Err(_) => {
+                SgxReq::Get => {
+                    let key = msg.key();
+                    let payload = self.handle_get(&key);
+                    let msg = SgxMsg::new(SgxReq::Get, None, payload);
+                    stream.write(msg.to_bytes().as_ref()).unwrap();
+                }
+                SgxReq::Set => {
+                    let key = msg.key();
+                    let payload = msg.payload();
+                    let reply = self.handle_set(&key, &payload);
+                    let msg = SgxMsg::new(SgxReq::Set, Some(key), reply);
+                    stream.write(msg.to_bytes().as_ref()).unwrap();
+                }
+                _  => {
+                    panic!("Unexpected reqs from SGX!");
                 }
             }
         }
