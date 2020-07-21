@@ -52,10 +52,10 @@ impl SyncListener for SafetyRulesSGXListener {
     fn accept(&self, local_addr: Option<&mut String>, peer_addr: Option<&mut String>) -> IoResult<Box<dyn SyncStream>> {
         let (stream, peer_address_tcp) = self.listener.accept()?;
         let local_addr_tcp = stream.local_addr()?;
-        eprintln!(
-            "runner:: bind -- local_address is {}, peer_address is {}",
-            local_addr_tcp, peer_address_tcp
-            );
+        //eprintln!(
+            //"runner:: bind -- local_address is {}, peer_address is {}",
+            //local_addr_tcp, peer_address_tcp
+            //);
 
         if let Some(local_addr) = local_addr {
             *local_addr = local_addr_tcp.to_string();
@@ -108,6 +108,6 @@ fn run_server(file: String) -> Result<(), ()> {
 pub fn start_lsr_enclave() {
     let file = get_enclave_file().unwrap();
     let _server = thread::spawn(move || run_server(file));
-    thread::sleep(std::time::Duration::from_secs(5));
+    thread::sleep(std::time::Duration::from_secs(1));
 }
 

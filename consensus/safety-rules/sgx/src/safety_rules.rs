@@ -29,6 +29,8 @@ use crate::{
     storage_proxy::StorageProxy,
     error::Error,
 };
+// profiling
+use std::time::{SystemTime, Duration};
 
 #[macro_use]
 macro_rules! sgx_print {
@@ -44,8 +46,8 @@ macro_rules! sgx_print {
     };
 
     ($first:expr $(, $rest:expr)* $(,)*) => {
-       sgx_print!(@preamble);
-       println!($first, $($rest),*);
+       //sgx_print!(@preamble);
+       //println!($first, $($rest),*);
     };
 }
 
@@ -281,7 +283,9 @@ impl TSafetyRules for SafetyRules {
         &mut self,
         maybe_signed_vote_proposal: &MaybeSignedVoteProposal)
         -> Result<Vote, Error> {
-        sgx_print!("Incoming vote to sign.");
+        // Ocall
+        let now = SystemTime::now();
+        //sgx_print!("Incoming vote to sign.");
         // Exit early if we cannot sign
         self.signer()?;
 
@@ -328,6 +332,7 @@ impl TSafetyRules for SafetyRules {
         self.storage_proxy
             .set_last_voted_round(proposed_block.round())?;
 
+        println!("diff = {:?}", now.elapsed());
         Ok(vote)
     }
 

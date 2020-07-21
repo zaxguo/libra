@@ -28,6 +28,7 @@ use aes_gcm::{
     Aes256Gcm,
     aead::{Aead, NewAead, generic_array::GenericArray},
 };
+use std::time::{SystemTime};
 
 pub struct StorageProxy {
     internal: Option<TcpStream>,
@@ -73,24 +74,42 @@ impl StorageProxy {
     }
 
     fn get(&self, key: &str) -> Vec<u8> {
+        let now = SystemTime::now();
         let msg = SgxMsg::new(SgxReq::Get, Some(key.into()), vec![0]);
         let mut stream = self.get_stream();
         stream.write(msg.to_bytes().as_ref()).unwrap();
 
         let reply = SgxMsg::from_stream(&mut stream);
+        let stream_len = msg.payload().len() as i32 + reply.payload().len() as i32;
+
+        let now = SystemTime::now();
+        println!("stream,{},{},{:?}", key,stream_len,  now.elapsed().unwrap().as_nanos());
+        let then = SystemTime::now();
+
         let payload = reply.payload();
         // decrypt the payload
         let result = self.decrypt(payload.as_ref());
+
+        println!("decrypt,{},{:?}", key, then.elapsed().unwrap().as_micros());
+        println!("get,{},{:?}", key, now.elapsed().unwrap().as_micros());
         result
     }
 
     fn set(&self, key: &str, payload: &[u8]) {
+        let now = SystemTime::now();
         let e_payload = self.encrypt(payload);
+
+        println!("encrypt,{},{:?}", key, now.elapsed().unwrap().as_micros());
+
         let msg = SgxMsg::new(SgxReq::Set, Some(key.into()), e_payload.to_vec());
         let mut stream = self.get_stream();
         stream.write(msg.to_bytes().as_ref()).unwrap();
         // By the time we receive this _reply, we know our set req has hit the disk
         let _reply = SgxMsg::from_stream(&mut stream);
+        let len = msg.payload().len() as i32 + _reply.payload().len() as i32;
+
+        println!("stream,{},{},{:?}", key, len, now.elapsed().unwrap().as_nanos());
+        println!("set,{},{:?}",key, now.elapsed().unwrap().as_micros());
     }
 
     pub fn epoch(&self) -> u64 {

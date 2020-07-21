@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    local_client::LocalClient,
+    local_client::{LocalClient, LocalClientSgx},
     persistent_safety_storage::PersistentSafetyStorage,
     process::ProcessService,
     remote_service::RemoteService,
     serializer::{SerializerClient, SerializerService},
     spawned_process::SpawnedProcess,
     thread::ThreadService,
-    SafetyRules, TSafetyRules,
+    SafetyRules, TSafetyRules, SafetyRulesSGX,
 };
 use libra_config::{
     config::{SafetyRulesConfig, SafetyRulesService},
@@ -67,6 +67,7 @@ pub fn storage(config: &mut SafetyRulesConfig) -> PersistentSafetyStorage {
 
 enum SafetyRulesWrapper {
     Local(Arc<RwLock<SafetyRules>>),
+    LocalSgx(Arc<RwLock<SafetyRulesSGX>>),
     Process(ProcessService),
     Serializer(Arc<RwLock<SerializerService>>),
     SpawnedProcess(SpawnedProcess),
@@ -104,6 +105,16 @@ impl SafetyRulesManager {
         let safety_rules = SafetyRules::new(storage, verify_vote_proposal_signature);
         Self {
             internal_safety_rules: SafetyRulesWrapper::Local(Arc::new(RwLock::new(safety_rules))),
+        }
+    }
+
+    pub fn new_local_sgx(
+        storage: PersistentSafetyStorage,
+        verify_vote_proposal_signature: bool,
+    ) -> Self {
+        let safety_rules_sgx = SafetyRulesSGX::new(storage);
+        Self {
+            internal_safety_rules: SafetyRulesWrapper::LocalSgx(Arc::new(RwLock::new(safety_rules_sgx))),
         }
     }
 
@@ -149,6 +160,10 @@ impl SafetyRulesManager {
             SafetyRulesWrapper::Local(safety_rules) => {
                 Box::new(LocalClient::new(safety_rules.clone()))
             }
+            SafetyRulesWrapper::LocalSgx(safety_rules) => {
+                Box::new(LocalClientSgx::new(safety_rules.clone()))
+            }
+
             SafetyRulesWrapper::Process(process) => Box::new(process.client()),
             SafetyRulesWrapper::Serializer(serializer_service) => {
                 Box::new(SerializerClient::new(serializer_service.clone()))

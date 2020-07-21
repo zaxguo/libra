@@ -780,6 +780,7 @@ fn test_sgx_tsafety_rules(safety_rules: &Callback) {
     let a2 = make_proposal_with_parent(round + 2, &a1, None, &signer, key.as_ref());
 
     safety_rules.initialize(&proof).unwrap();
+
     let consensus_state = safety_rules.consensus_state().unwrap();
     println!("consensus_state = {}", consensus_state);
     safety_rules.sign_proposal(a1.block().block_data().clone()).unwrap();

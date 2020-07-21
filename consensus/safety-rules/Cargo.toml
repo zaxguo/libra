@@ -43,6 +43,9 @@ name = "safety_rules"
 harness = false
 required-features = ["testing"]
 
+[profile.bench]
+debug = true
+
 [features]
 default = []
 sgx = []

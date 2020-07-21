@@ -108,7 +108,7 @@ impl<T: Send + Sync + TimeService> KVStorage for InMemoryStorageInternal<T> {
                     return Err(Error::InternalError("Incompatible type!".into()));
                 }
             };
-            println!("encrypting {}...", key);
+            //println!("encrypting {}...", key);
             let e_bytes = cipher.encrypt(nonce, value.as_ref()).unwrap();
             let bytes = cipher.decrypt(nonce, e_bytes.as_ref()).unwrap();
             self.set(key, Value::Bytes(e_bytes)).unwrap();

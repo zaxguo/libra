@@ -8,6 +8,7 @@ use libra_secure_storage::{InMemoryStorage, KVStorage, OnDiskStorage, Storage, V
 use libra_types::validator_signer::ValidatorSigner;
 use safety_rules::{test_utils, PersistentSafetyStorage, SafetyRulesManager, TSafetyRules};
 use tempfile::NamedTempFile;
+use std::time::{Duration, SystemTime};
 
 const VAULT_HOST: &str = "http://localhost:8200";
 const VAULT_TOKEN: &str = "root_token";
@@ -58,7 +59,7 @@ fn lsr(mut safety_rules: Box<dyn TSafetyRules>, signer: ValidatorSigner, n: u64)
 fn in_memory(n: u64) {
     let signer = ValidatorSigner::from_int(0);
     let waypoint = test_utils::validator_signers_to_waypoint(&[&signer]);
-    let storage = PersistentSafetyStorage::initialize(
+    let mut storage = PersistentSafetyStorage::initialize(
         Storage::from(InMemoryStorage::new()),
         signer.author(),
         signer.private_key().clone(),
@@ -67,6 +68,30 @@ fn in_memory(n: u64) {
     );
     let safety_rules_manager = SafetyRulesManager::new_local(storage, false);
     lsr(safety_rules_manager.client(), signer, n);
+}
+
+fn in_memory_sgx(n: u64) {
+    let signer = ValidatorSigner::from_int(0);
+    let waypoint = test_utils::validator_signers_to_waypoint(&[&signer]);
+    let mut storage = PersistentSafetyStorage::initialize(
+        Storage::from(InMemoryStorage::new()),
+        signer.author(),
+        signer.private_key().clone(),
+        Ed25519PrivateKey::generate_for_testing(),
+        waypoint,
+    );
+    let mut store = storage.internal_store();
+    let start = SystemTime::now();
+    store.encrypt_and_convert_all().unwrap();
+    println!("encryption costs {:?}", start.elapsed());
+
+    let start = SystemTime::now();
+    let safety_rules_manager = SafetyRulesManager::new_local_sgx(storage, false);
+    println!("instantiates sgx costs {:?}", start.elapsed());
+
+    let start = SystemTime::now();
+    lsr(safety_rules_manager.client(), signer, n);
+    println!("running lsr sgx costs {:?}", start.elapsed());
 }
 
 fn on_disk(n: u64) {
@@ -134,7 +159,7 @@ fn vault(n: u64) {
 }
 
 pub fn benchmark(c: &mut Criterion) {
-    let count = 100;
+    let count = 10;
     let duration_secs = 5;
     let samples = 10;
 
@@ -154,10 +179,11 @@ pub fn benchmark(c: &mut Criterion) {
     group
         .measurement_time(std::time::Duration::from_secs(duration_secs))
         .sample_size(samples);
-    group.bench_function("InMemory", |b| b.iter(|| in_memory(black_box(count))));
-    group.bench_function("OnDisk", |b| b.iter(|| on_disk(black_box(count))));
-    group.bench_function("Serializer", |b| b.iter(|| serializer(black_box(count))));
-    group.bench_function("Thread", |b| b.iter(|| thread(black_box(count))));
+    //group.bench_function("InMemory", |b| b.iter(|| in_memory(black_box(count))));
+    group.bench_function("InMemorySGX", |b| b.iter(|| in_memory_sgx(black_box(count))));
+    //group.bench_function("OnDisk", |b| b.iter(|| on_disk(black_box(count))));
+    //group.bench_function("Serializer", |b| b.iter(|| serializer(black_box(count))));
+    //group.bench_function("Thread", |b| b.iter(|| thread(black_box(count))));
 
     if enable_vault {
         group.bench_function("Vault", |b| b.iter(|| vault(black_box(count))));
